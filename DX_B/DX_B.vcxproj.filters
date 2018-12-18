@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Common">
+      <UniqueIdentifier>e1b544e1-3964-4e8b-a7f7-66dfe47aca81</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>f9d80b08-b5b3-440e-add1-1e448fe65186</UniqueIdentifier>
+      <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
+    </Filter>
+    <Image Include="Assets\LockScreenLogo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Wide310x150Logo.scale-200.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="XGameInput.cpp" />
+    <ClCompile Include="VertexStructureTypes.cpp" />
+    <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="FileReaderWriter.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="CameraEngine.cpp" />
+    <ClCompile Include="XModelMesh.cpp" />
+    <ClCompile Include="TextureResource.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="XGameInput.h" />
+    <ClInclude Include="VertexStructureTypes.h" />
+    <ClInclude Include="Engine.h" />
+    <ClInclude Include="FileReaderWriter.h" />
+    <ClInclude Include="CameraEngine.h" />
+    <ClInclude Include="XModelMesh.h" />
+    <ClInclude Include="TextureResource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="..\..\..\..\Desktop\Wood.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="..\..\..\..\Desktop\RGB_TransparencyMap.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DX_B_TemporaryKey.pfx" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="DX_B.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="VertexShader.hlsl" />
+    <FxCompile Include="PositionColor.hlsl" />
+    <FxCompile Include="TexturePosition.hlsl" />
+  </ItemGroup>
+</Project>
