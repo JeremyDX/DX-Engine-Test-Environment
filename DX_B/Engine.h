@@ -61,7 +61,6 @@ class Engine
 		void CreateGeometry();
 		void CreatePipeline();
 		void Update();
-		void BeginScene();
 
 		void Render();
 };

@@ -53,6 +53,31 @@ bool XGameInput::LoadController()
 	return 0;
 }
 
+uint16 XGameInput::GetLeftStickX()
+{
+	return gamepad.sThumbLX;
+}
+
+uint16 XGameInput::GetLeftStickY()
+{
+	return gamepad.sThumbLY;
+}
+
+uint16 XGameInput::GetRightStickX()
+{
+	return gamepad.sThumbRX;
+}
+
+uint16 XGameInput::GetRightStickY()
+{
+	return gamepad.sThumbRY;
+}
+
+XINPUT_GAMEPAD& XGameInput::GamePad()
+{
+	return gamepad;
+}
+
 uint16 XGameInput::GetButtonBitSet()
 {
 	return gamepad.wButtons;

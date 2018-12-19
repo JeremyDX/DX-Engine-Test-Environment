@@ -72,23 +72,11 @@ void Engine::Initialize()
 	ComPtr<ID3D11Texture2D> zbuffertexture;
 	device->CreateTexture2D(&texd, nullptr, &zbuffertexture);
 
-	D3D11_DEPTH_STENCIL_VIEW_DESC dsvd;
-	ZeroMemory(&dsvd, sizeof(dsvd));
+	//D3D11_DEPTH_STENCIL_VIEW_DESC dsvd;
+	//ZeroMemory(&dsvd, sizeof(dsvd));
 
-	device->CreateDepthStencilView(zbuffertexture.Get(), &dsvd, &zbuffer);
-
-
-	D3D11_DEPTH_STENCIL_DESC dsd = { 0 };
-	dsd.DepthEnable = true;
-	dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsd.DepthFunc = D3D11_COMPARISON_LESS;
-
-	device->CreateDepthStencilState(&dsd, depthOnState.GetAddressOf());
-
-	dsd.DepthEnable = false;
-
-	device->CreateDepthStencilState(&dsd, depthOffState.GetAddressOf());
-
+	//d3d11Device->CreateDepthStencilView(depthStencilBuffer, NULL, &depthStencilView);
+	device->CreateDepthStencilView(zbuffertexture.Get(), NULL, &zbuffer);
 
 	D3D11_VIEWPORT viewport = { 0 };
 
@@ -156,12 +144,8 @@ void Engine::Initialize()
 	XMMATRIX matProjection = XMMatrixPerspectiveFovLH(XMConvertToRadians(45), (FLOAT)Window->Bounds.Width / (FLOAT)Window->Bounds.Height, 1, 1000);                                                        // the far view-plane
 
 	camera.SetProjection(&matProjection);
-
 	camera.InitializeCameraPosition();
 
-	time = 0.0F;
-	camX = 0;
-	camY = 1;
 }
 
 void Engine::CreateGeometry()
@@ -171,9 +155,18 @@ void Engine::CreateGeometry()
 	//model_mesh.CreateColoredSquare(device.Get(), &vertexbuffer, 10, 10, 550, 550, color);
 	
 	TextureResource resource;
-	//resource.CreateFromFile(device.Get(), "Wood.png");
+
 	model_mesh.CreateTexturedSquare(device.Get(), &vertexbuffer, 10, 100, resource);
 	model_mesh.CreateCubeObject(device.Get(), 0.0F, 0.0F, 8.0F);
+	model_mesh.CreateCubeObject(device.Get(), 0.0F, 0.0F, 12.0F);
+	model_mesh.CreateCubeObject(device.Get(), 0.0F, 0.0F, 16.0F);
+
+	UINT stride = sizeof(VertexPositionTexture);
+	UINT offset = 0;
+
+	context->IASetVertexBuffers(0, 1, model_mesh.vertexbuffer.GetAddressOf(), &stride, &offset);
+
+	context->IASetIndexBuffer(model_mesh.indexbuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
 }
 
 void Engine::CreatePipeline()
@@ -212,85 +205,104 @@ void Engine::CreatePipeline()
 	CreateWICTextureFromFile(device.Get(), nullptr, L"Wood.png", nullptr, &texture, 0);
 	CreateWICTextureFromFile(device.Get(), nullptr, L"RGB_TransparencyMap.png", nullptr, &trans_texture, 0);
 	CreateWICTextureFromFile(device.Get(), nullptr, L"Wood.png", nullptr, &white_texture, 0);
+
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
 // this function performs updates to the state of the game
 void Engine::Update()
 {
 	XGameInput::LoadController();
-	controller_input = XGameInput::GetButtonBitSet();
-	bool updated = 0L;
+	XINPUT_GAMEPAD loaded_pad = XGameInput::GamePad();
 
-	XGameInput::GetJoysticks();
+	if (XGameInput::Compare(XINPUT_GAMEPAD_B))
+	{
+		camera.InitializeCameraPosition(); //Reset View Matrix.
+		return;
+	}
 
+	signed short right_strength = loaded_pad.sThumbLX; //Move Left Right Joystick.
+	signed short forward_strength = loaded_pad.sThumbLY; //Move Forward Back Joystick.
+
+	signed short turn_strength = loaded_pad.sThumbRX; //Turn Left Right Joystick.
+	signed short look_strength = loaded_pad.sThumbRY; //Look Up Down Joystick.
+
+	unsigned int abs_forward = forward_strength * forward_strength;
+	unsigned int abs_right = right_strength * right_strength;
+	unsigned int abs_turn = turn_strength * turn_strength;
+	unsigned int abs_look = look_strength * look_strength;
+
+	unsigned int dead_zone =  6400 * 6400; //Should be about at least 20% of joystick needs to be pressed. 
+
+	bool updated = false;
+
+	//If the player did in fact turn updated the camera movement vectors. 
+	if (abs_turn > dead_zone)
+	{
+
+		camera.rotation.y -= turn_strength;
+
+		//0xB40000 = 360 * 32768 in hex form.
+		if (camera.rotation.y < 0) 
+			camera.rotation.y += 0xB40000;
+		if (camera.rotation.y >= 0xB40000)
+			camera.rotation.y -= 0xB40000;
+
+		float value = camera.rotation.y / 32768.0F;
+		double PI = 3.14159265;
+
+		camera.forward.x = (float)sin(value * PI / 180);
+		camera.forward.z = (float)cos(value * PI / 180);
+
+		int var = (camera.rotation.y + 0x2D0000);
+		if (var >= 0xB40000)
+			var -= 0xB40000;
+		value = var / 32768.0F;
+
+		camera.right.x = (float)sin(value * PI / 180);    //Right Vector X without Up Vector.
+		camera.right.z = (float)cos(value * PI / 180);  //Right Vector Z without Up Vector.
+		updated = true;
+	}
+
+	if (abs_forward > dead_zone)
+	{
+		float strength = forward_strength * 0.00003125 * 0.05F;
+		camera.position.x += strength * camera.forward.x;
+		camera.position.z -= strength * camera.forward.z;
+		updated = true;
+	}
+
+	if (abs_right > dead_zone)
+	{
+		float strength = right_strength * 0.00003125 * 0.05F;
+		camera.position.x -= strength * camera.right.x;
+		camera.position.z += strength * camera.right.z;
+		updated = true;
+	}
 
 	if (updated)
 	{
-		camera.InitializeCameraPosition();
+		camera.UpdateViewMatrix();
 	}
-}
-
-void Engine::BeginScene()
-{
-
 }
 
 void Engine::Render()
 {
-	// set our new render target object as the active render target
-	context->OMSetRenderTargets(1, rendertarget.GetAddressOf(), nullptr);
-
-	context->OMSetDepthStencilState(depthOnState.Get(), 0);
-
-
-	float BlendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	context->OMSetBlendState(blendstate.Get(), BlendFactor, 0xffffffff);
-
-	context->RSSetState(rasterizerstate.Get());
-
-	//context->OMSetDepthStencilState(depthOffState.Get(), 0);
-
-	// clear the back buffer to a deep blue
 	float color[4] = { 1.0f, 0.0f, 0.0f, 0.0f };
-	HLSLBuffer buffer;
-	buffer.view_matrix = XMMatrixIdentity();
 
+	context->OMSetRenderTargets(1, rendertarget.GetAddressOf(), zbuffer.Get());
 	context->ClearRenderTargetView(rendertarget.Get(), color);
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	context->ClearDepthStencilView(zbuffer.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-	// set the vertex buffer
-	UINT stride = sizeof(VertexPositionTexture);
-	UINT offset = 0;
-
-	//XMMATRIX matRotate = XMMatrixRotationY(time);
+	HLSLBuffer buffer;
 	buffer.view_matrix = XMLoadFloat4x4(&camera.view_matrix) * XMLoadFloat4x4(&camera.projection);
-	 // matRotate * matView * matProjection;
-
-	//THIS IS THE VERTEXS TO BE DRAWN.
-	context->IASetVertexBuffers(0, 1, model_mesh.vertexbuffer.GetAddressOf(), &stride, &offset);
-	context->IASetIndexBuffer(model_mesh.indexbuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
-
 
 	context->UpdateSubresource(constantbuffer.Get(), 0, 0, &buffer, 0, 0);
 
 	static ID3D11ShaderResourceView* shader_resources1[]{ texture.Get(), texture.Get() };
 	context->PSSetShaderResources(0, ARRAYSIZE(shader_resources1), shader_resources1);
 
+	context->DrawIndexed(36 * 3, 0, 0);
 
-	context->DrawIndexed(36, 0, 0);
-
-	//Begin 2D Render..
-
-	/*buffer.view_matrix = XMMatrixIdentity();
-	//buffer.view_matrix = matRotate2;
-	context->IASetVertexBuffers(0, 1, vertexbuffer.GetAddressOf(), &stride, &offset);
-	context->UpdateSubresource(constantbuffer.Get(), 0, 0, &buffer, 0, 0);
-
-	static ID3D11ShaderResourceView* shader_resources2[]{ trans_texture.Get(), trans_texture.Get() };
-	context->PSSetShaderResources(0, ARRAYSIZE(shader_resources2), shader_resources2);
-
-	context->Draw(3, 0);*/
-
-	// switch the back buffer and the front buffer
 	swapchain->Present(1, 0);
 }

@@ -1,5 +1,14 @@
 #pragma once
 
+struct Vector3S
+{
+	signed int x, y, z;
+};
+
+struct Vector3U
+{
+	unsigned int x, y, z;
+};
 
 struct Vertex3F
 {

@@ -7,7 +7,7 @@ float4 main(float4 position : SV_POSITION, float2 texcoord : TEXCOORD) : SV_TARG
 {
 	float4 color = Texture.Sample(ss, texcoord);
 	float4 alpha = TransparencyMap.Sample(ss, texcoord);
-	color.r = texcoord.x;
+	color.b = texcoord.x;
 	color.g = texcoord.y;
 	/*if (alpha.r == alpha.g && alpha.g == alpha.b)
 	{

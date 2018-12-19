@@ -29,6 +29,11 @@ class XGameInput
 {
 public:
 	static bool LoadController();
+	static uint16 GetLeftStickX();
+	static uint16 GetLeftStickY();
+	static uint16 GetRightStickX();
+	static uint16 GetRightStickY();
+	static XINPUT_GAMEPAD& GamePad();
 	static uint16 GetButtonBitSet();
 	static uint32 GetHoldTimeOnBit(int index);
 	static int8 GetButtonState(int index);
