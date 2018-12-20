@@ -240,7 +240,8 @@ void Engine::Update()
 	if (abs_turn > dead_zone)
 	{
 
-		camera.rotation.y -= turn_strength;
+		camera.rotation.y += turn_strength * 2;
+		//camera.rotation.y = 32768 * 10;
 
 		//0xB40000 = 360 * 32768 in hex form.
 		if (camera.rotation.y < 0) 
@@ -259,15 +260,43 @@ void Engine::Update()
 			var -= 0xB40000;
 		value = var / 32768.0F;
 
-		camera.right.x = (float)sin(value * PI / 180);    //Right Vector X without Up Vector.
+		camera.right.x = (float)sin(value * PI / 180);  //Right Vector X without Up Vector.
 		camera.right.z = (float)cos(value * PI / 180);  //Right Vector Z without Up Vector.
+
+		updated = true;
+	}
+
+	if (abs_look > dead_zone)
+	{
+		camera.rotation.x -= look_strength * 2;
+		//camera.rotation.x = 32768 * 10;
+
+		//0x230000 = Hex version of 70.0.
+		//We force the Look rotation to a range of -70 degrees and 70 degrees.
+		if (camera.rotation.x < -0x230000)
+			camera.rotation.x = -0x230000;
+		if (camera.rotation.x > 0x230000)
+			camera.rotation.x = 0x230000;
+
+		signed int rotation = camera.rotation.x;
+		double PI = 3.14159265;
+
+		//Now we have a postive value between 0-70 (positive) or 290-359 (negative). 
+		if (rotation < 0)
+			rotation += 0xB40000;
+
+		float value = rotation / 32768.0F;
+
+		camera.right.y = (float)sin(value * PI / 180);
+		camera.up.y = (float)cos(value * PI / 180);
+
 		updated = true;
 	}
 
 	if (abs_forward > dead_zone)
 	{
 		float strength = forward_strength * 0.00003125 * 0.05F;
-		camera.position.x += strength * camera.forward.x;
+		camera.position.x -= strength * camera.forward.x;
 		camera.position.z -= strength * camera.forward.z;
 		updated = true;
 	}
@@ -276,7 +305,7 @@ void Engine::Update()
 	{
 		float strength = right_strength * 0.00003125 * 0.05F;
 		camera.position.x -= strength * camera.right.x;
-		camera.position.z += strength * camera.right.z;
+		camera.position.z -= strength * camera.right.z;
 		updated = true;
 	}
 
