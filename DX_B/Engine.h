@@ -39,9 +39,8 @@ class Engine
 
 		ComPtr<ID3D11RasterizerState> rasterizerstate;
 
-		ComPtr<ID3D11ShaderResourceView> texture;
-		ComPtr<ID3D11ShaderResourceView> trans_texture;
-		ComPtr<ID3D11ShaderResourceView> white_texture;
+		ComPtr<ID3D11ShaderResourceView> wood_texture;
+		ComPtr<ID3D11ShaderResourceView> font_texture;
 
 		ComPtr<ID3D11BlendState> blendstate;                      // the blend state interface
 

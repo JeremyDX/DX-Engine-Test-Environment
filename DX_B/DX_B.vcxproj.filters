@@ -19,6 +19,7 @@
     <ClCompile Include="CameraEngine.cpp" />
     <ClCompile Include="XModelMesh.cpp" />
     <ClCompile Include="TextureResource.cpp" />
+    <ClCompile Include="FontResource.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -30,12 +31,40 @@
     <ClInclude Include="CameraEngine.h" />
     <ClInclude Include="XModelMesh.h" />
     <ClInclude Include="TextureResource.h" />
+    <ClInclude Include="FontResource.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\..\Desktop\Wood.png">
       <Filter>Assets</Filter>
     </Image>
     <Image Include="..\..\..\..\Desktop\RGB_TransparencyMap.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\0_FONT.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\1.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\1_FONT.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\2.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\2_FONT.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\3_FONT.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Image_0.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Image_1.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Image_2.PNG">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>

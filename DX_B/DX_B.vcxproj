@@ -245,11 +245,21 @@
   <ItemGroup>
     <Image Include="..\..\..\..\Desktop\RGB_TransparencyMap.png" />
     <Image Include="..\..\..\..\Desktop\Wood.png" />
+    <Image Include="Assets\0_FONT.PNG" />
+    <Image Include="Assets\1.png" />
+    <Image Include="Assets\1_FONT.PNG" />
+    <Image Include="Assets\2.png" />
+    <Image Include="Assets\2_FONT.PNG" />
+    <Image Include="Assets\3_FONT.PNG" />
+    <Image Include="Assets\Image_0.PNG" />
+    <Image Include="Assets\Image_1.png" />
+    <Image Include="Assets\Image_2.PNG" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CameraEngine.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="FileReaderWriter.h" />
+    <ClInclude Include="FontResource.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="VertexStructureTypes.h" />
@@ -261,6 +271,7 @@
     <ClCompile Include="CameraEngine.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="FileReaderWriter.cpp" />
+    <ClCompile Include="FontResource.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

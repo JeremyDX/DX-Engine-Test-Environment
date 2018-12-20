@@ -206,8 +206,12 @@ void CameraEngine::UpdateViewMatrix()
 	view_matrix._23 = -right.y;
 	view_matrix._33 = forward.z * up.y;
 
-	//Position Vector.
-	view_matrix._41 = position.x * view_matrix._11 + position.y * view_matrix._21 + position.z * view_matrix._31;
-	view_matrix._42 = position.x * view_matrix._12 + position.y * view_matrix._22 + position.z * view_matrix._32;
-	view_matrix._43 = position.x * view_matrix._13 + position.y * view_matrix._23 + position.z * view_matrix._33;
+	//Dot Product (Position, Right Vector).
+	view_matrix._41 = -(position.x * view_matrix._11 + position.y * view_matrix._21 + position.z * view_matrix._31);
+
+	//Dot Product (Position, Up Vector).
+	view_matrix._42 = -(position.x * view_matrix._12 + position.y * view_matrix._22 + position.z * view_matrix._32);
+
+	//Dot Product (Position, Forward Vector).
+	view_matrix._43 = -(position.x * view_matrix._13 + position.y * view_matrix._23 + position.z * view_matrix._33);
 }

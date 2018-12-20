@@ -202,9 +202,8 @@ void Engine::CreatePipeline()
 
 	context->VSSetConstantBuffers(0, 1, constantbuffer.GetAddressOf());
 
-	CreateWICTextureFromFile(device.Get(), nullptr, L"Wood.png", nullptr, &texture, 0);
-	CreateWICTextureFromFile(device.Get(), nullptr, L"RGB_TransparencyMap.png", nullptr, &trans_texture, 0);
-	CreateWICTextureFromFile(device.Get(), nullptr, L"Wood.png", nullptr, &white_texture, 0);
+	CreateWICTextureFromFile(device.Get(), nullptr, L"Wood.png", nullptr, &wood_texture, 0);
+	CreateWICTextureFromFile(device.Get(), nullptr, L"0_FONT.PNG", nullptr, &font_texture, 0);
 
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
@@ -295,17 +294,17 @@ void Engine::Update()
 
 	if (abs_forward > dead_zone)
 	{
-		float strength = forward_strength * 0.00003125 * 0.1F;
-		camera.position.x -= strength * camera.forward.x;
-		camera.position.z -= strength * camera.forward.z;
+		float strength = (float)(forward_strength * 0.00003125 * 0.15);
+		camera.position.x += strength * camera.forward.x;
+		camera.position.z += strength * camera.forward.z;
 		updated = true;
 	}
 
 	if (abs_right > dead_zone)
 	{
-		float strength = right_strength * 0.00003125 * 0.15F;
-		camera.position.x -= strength * camera.right.x;
-		camera.position.z -= strength * camera.right.z;
+		float strength = (float)(right_strength * 0.00003125 * 0.15);
+		camera.position.x += strength * camera.right.x;
+		camera.position.z += strength * camera.right.z;
 		updated = true;
 	}
 
@@ -323,13 +322,12 @@ void Engine::Render()
 	context->ClearRenderTargetView(rendertarget.Get(), color);
 	context->ClearDepthStencilView(zbuffer.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
+	context->PSSetShaderResources(0, 1, font_texture.GetAddressOf());
+
 	HLSLBuffer buffer;
 	buffer.view_matrix = XMLoadFloat4x4(&camera.view_matrix) * XMLoadFloat4x4(&camera.projection);
 
 	context->UpdateSubresource(constantbuffer.Get(), 0, 0, &buffer, 0, 0);
-
-	static ID3D11ShaderResourceView* shader_resources1[]{ texture.Get(), texture.Get() };
-	context->PSSetShaderResources(0, ARRAYSIZE(shader_resources1), shader_resources1);
 
 	context->DrawIndexed(36 * 3, 0, 0);
 
