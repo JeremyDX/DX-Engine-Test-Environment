@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "CameraEngine.h"
+#include <WinBase.h>
 
 uint16 CameraEngine::DEGREE_LOOKUP_TABLE[91] =
 {
@@ -182,8 +183,12 @@ void CameraEngine::InitializeCameraPosition()
 	view_matrix._24 = 0.0F;
 	view_matrix._34 = 0.0F;
 	view_matrix._44 = 1.0F;
+
+	OutputDebugString(L"Hello World!!!!");
 }
 
+
+//right.y IS NOT in use rather it's a placeholder for Y sin vlaue.
 void CameraEngine::UpdateViewMatrix()
 {
 	//Right Vector.

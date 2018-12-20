@@ -144,8 +144,8 @@ void Engine::Initialize()
 	XMMATRIX matProjection = XMMatrixPerspectiveFovLH(XMConvertToRadians(45), (FLOAT)Window->Bounds.Width / (FLOAT)Window->Bounds.Height, 1, 1000);                                                        // the far view-plane
 
 	camera.SetProjection(&matProjection);
-	camera.InitializeCameraPosition();
 
+	camera.InitializeCameraPosition();
 }
 
 void Engine::CreateGeometry()
@@ -295,7 +295,7 @@ void Engine::Update()
 
 	if (abs_forward > dead_zone)
 	{
-		float strength = forward_strength * 0.00003125 * 0.05F;
+		float strength = forward_strength * 0.00003125 * 0.1F;
 		camera.position.x -= strength * camera.forward.x;
 		camera.position.z -= strength * camera.forward.z;
 		updated = true;
@@ -303,7 +303,7 @@ void Engine::Update()
 
 	if (abs_right > dead_zone)
 	{
-		float strength = right_strength * 0.00003125 * 0.05F;
+		float strength = right_strength * 0.00003125 * 0.15F;
 		camera.position.x -= strength * camera.right.x;
 		camera.position.z -= strength * camera.right.z;
 		updated = true;

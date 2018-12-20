@@ -24,9 +24,10 @@ class CameraEngine
 
 		XMFLOAT3 position;  //Camera Current Position on the Map.
 
-		Vector3S rotation;  //YawPitchRoll Variables from 0 - 360.0f degrees. 
+		Vector3S rotation;  //Stores the rotation values prereduced in 32bit integer form.
 
 		XMFLOAT3 up;		//Up View Vector. This Vector tells us where to rotate the Forward/Right Vectors.
+
 		XMFLOAT3 forward;   //Forward View Vector. Up Vector DOES NOT modify this vector.
 		XMFLOAT3 right;     //Right View Vector. Up Vector DOES NOT modify this vector.
 };
