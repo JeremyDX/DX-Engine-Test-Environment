@@ -1,15 +1,20 @@
+#include <iostream>
 #include "VertexStructureTypes.h"
-#include "TextureResource.h"
-
-using namespace Microsoft::WRL;
 
 class FontResource
 {
-	private:
-		VertexPositionTexture VertexStorage[1024];
-		short IndexStorage[1024];
+	public:
+		void CreateGlyphMapping();
+		void AddStringToBuffer(D3D11_VIEWPORT view, const wchar_t * text, int drawX, int drawY);
+
+		void PushStringsToDeviceBuffer(ID3D11Device * device);
+		 int GetSize();
 
 	public:
+		Microsoft::WRL::ComPtr<ID3D11Buffer> buffer;
 
-		ComPtr<ID3D11Buffer> vertexbuffer;
+	private:
+		Vertex4F glyph_mapped_uvs[96];
+		VertexPositionTexture vertexstorage[1024];
+		short vertexposition = 0;
 };

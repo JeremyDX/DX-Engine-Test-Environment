@@ -34,6 +34,7 @@ class Engine
 		ComPtr<ID3D11Buffer> vertexbuffer;
 
 		ComPtr<ID3D11DepthStencilView> zbuffer;
+
 		ComPtr<ID3D11DepthStencilState> depthOffState;
 		ComPtr<ID3D11DepthStencilState> depthOnState;
 
@@ -41,25 +42,43 @@ class Engine
 
 		ComPtr<ID3D11ShaderResourceView> wood_texture;
 		ComPtr<ID3D11ShaderResourceView> font_texture;
+		ComPtr<ID3D11ShaderResourceView> gradiant_texture;
+		ComPtr<ID3D11ShaderResourceView> test_texture;
 
-		ComPtr<ID3D11BlendState> blendstate;                      // the blend state interface
+		ComPtr<ID3D11BlendState> blendstate;
 
+		ComPtr<ID3D11DepthStencilState> depthonstate;
+		ComPtr<ID3D11DepthStencilState> depthoffstate;
+		ComPtr<ID3D11SamplerState> sampler;
+
+		ComPtr<ID3D11Texture2D> zbuffertexture2;
+		ComPtr<ID3D11RenderTargetView> alt_rendertarget;
+		ComPtr<ID3D11ShaderResourceView> alt_shadertexture;
+
+		D3D11_VIEWPORT viewport;
 
 	private:
 		FileReaderWriter file_reader;
 		CameraEngine camera;
+		FontResource font_resource;
 		XModelMesh model_mesh;
 		float time;
 		int camX, camY;
+		int TEST_STATE = 0;
 		uint16 controller_input;
 
 	public:
 		Engine();
 		~Engine();
 		void Initialize();
+		void PreRenderUIComponents();
 		void CreateGeometry();
 		void CreatePipeline();
 		void Update();
+
+		void BeginRender2D();
+
+		void EndRender2D();
 
 		void Render();
 };

@@ -32,14 +32,9 @@
     <ClInclude Include="XModelMesh.h" />
     <ClInclude Include="TextureResource.h" />
     <ClInclude Include="FontResource.h" />
+    <ClInclude Include="FontString.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\Desktop\Wood.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="..\..\..\..\Desktop\RGB_TransparencyMap.png">
-      <Filter>Assets</Filter>
-    </Image>
     <Image Include="Assets\0_FONT.PNG">
       <Filter>Assets</Filter>
     </Image>
@@ -65,6 +60,12 @@
       <Filter>Assets</Filter>
     </Image>
     <Image Include="Assets\Image_2.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\RGB_TransparencyMap.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Wood.png">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>

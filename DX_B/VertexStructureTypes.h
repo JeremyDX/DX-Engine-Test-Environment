@@ -10,9 +10,19 @@ struct Vector3U
 	unsigned int x, y, z;
 };
 
+struct Vertex2F
+{
+	float U, V;			// vertex position
+};
+
 struct Vertex3F
 {
 	float X, Y, Z;		// vertex position
+};
+
+struct Vertex4F
+{
+	float R, G, B, A;	// vertex position
 };
 
 struct VertexPositionColor

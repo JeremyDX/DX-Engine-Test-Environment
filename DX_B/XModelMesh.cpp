@@ -1,28 +1,68 @@
 #include "pch.h"
 #include "XModelMesh.h"
 
-void XModelMesh::CreateTexturedSquare(ID3D11Device *device, ID3D11Buffer** buffer, float drawX, float drawY, TextureResource resource)
+void XModelMesh::CreateTexturedSquare(ID3D11Device *device, ID3D11Buffer** buffer)
 {
-	float a = 1.0F / 400.0F; //0.002500 //Half Screen Width. 
-	float b = 1.0F / 300.0F; //0.003333 //Half Screen Height. 
-
-	float nX = -1.0F + (drawX * a);
-	float nY = 1.0F - ((drawY + 512) * b);
-
-	float pX = -1.0F + ((drawX + 512) * a);
-	float pY = 1.0F - (drawY * b);
-
 	VertexPositionTexture square[6]
-	{									
-		{ nX,  pY, 0.0f,	0.0F, 0.0F}, //Top Left.
-		{ pX,  nY, 0.0f,	1.0F, 1.0F}, //Bottom Right.
-		{ nX,  nY, 0.0f,	0.0F, 1.0F}, //Bottom Left.
+	{
+		{ -1.0F,  1.0F, 0.0f,	0.0F, 0.0F}, //Top Left.
+		{  1.0F, -1.0F, 0.0f,	1.0F, 1.0F}, //Bottom Right.
+		{ -1.0F, -1.0F, 0.0f,	0.0F, 1.0F}, //Bottom Left.
 
-		{ pX,  nY, 0.0f,	1.0F, 1.0F}, //Bottom Right.
-		{ nX,  pY, 0.0f,	0.0F, 0.0F}, //Top Left.
-		{ pX,  pY, 0.0f,	1.0F, 0.0F}, //Top Right.
+		{  1.0F, -1.0F, 0.0f,	1.0F, 1.0F}, //Bottom Right.
+		{ -1.0F,  1.0F, 0.0f,	0.0F, 0.0F}, //Top Left.
+		{  1.0F,  1.0F, 0.0f,	1.0F, 0.0F}, //Top Right.
 	};
 
+	D3D11_BUFFER_DESC bd = { 0 };
+	bd.ByteWidth = sizeof(VertexPositionTexture) * 6;
+	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+
+	D3D11_SUBRESOURCE_DATA srd = { square, 0, 0 };
+	device->CreateBuffer(&bd, &srd, buffer);
+}
+
+void XModelMesh::DrawString(ID3D11Device *device, FontResource resource, std::string text, float drawX, float drawY)
+{
+/*	int image_width = 413;
+	int image_height = 235;
+	int font_size = 38;
+	int columns = 16;
+	int rows = 6;
+
+	int widths[96]
+	{
+		16, 27, 41, 64, 87, 111, 135, 145, 159, 173, 216, 237, 248, 263, 274, 291,
+		23, 44, 67, 90, 114, 137, 160, 183, 206, 229, 240, 283, 326, 347, 390, 411,
+		43, 69, 92, 116, 140, 161, 182, 207, 231, 241, 263, 287, 309, 338, 362,	387,
+		23, 48, 71, 95, 119, 143, 168, 202, 227, 252, 276, 290, 307, 321, 364, 384,
+		13, 33, 53, 73, 94, 114, 130, 151, 171, 181, 193, 212, 222, 249, 269, 290,
+		21, 42, 60, 80, 96, 116, 138, 167, 188, 210, 230, 269, 308, 347, 386, 402
+	};
+
+	float a = 2.0F / 775.0F; //0.002500 //Half Screen Width. 
+	float b = 2.0F / 454.0F; //0.003333 //Half Screen Height. 
+
+	VertexPositionTexture square[576];
+
+	for (int n = 0; n < 96; ++n)
+	{
+		int index = n * 6;
+
+		//Vertex4F vertex = resource.GetGlyph(n);
+		float left = resource.;
+		float right = (widths[n]) / (float)image_width;
+		float top = (charHeightPos + 1) / (float)image_height;
+		float bottom = (39 + charHeightPos) / (float)image_height;
+
+		square[index + 0] = { nX, pY, 0.0f, left,  top }; //Top Left.
+		square[index + 1] = { pX, nY, 0.0f, right, bottom }; //Bottom Right.
+		square[index + 2] = { nX, nY, 0.0f, left,  bottom }; //Bottom Left.
+
+		square[index + 3] = { pX, nY, 0.0f, right, bottom }; //Bottom Right.
+		square[index + 4] = { nX, pY, 0.0f, left,  top }; //Top Left.
+		square[index + 5] = { pX, pY, 0.0f, right, top }; //Top Right.
+	}
 	// create the vertex buffer
 	D3D11_BUFFER_DESC bd = { 0 };
 	bd.ByteWidth = sizeof(VertexPositionTexture) * ARRAYSIZE(square);
@@ -31,38 +71,7 @@ void XModelMesh::CreateTexturedSquare(ID3D11Device *device, ID3D11Buffer** buffe
 	D3D11_SUBRESOURCE_DATA srd = { square, 0, 0 };
 
 	device->CreateBuffer(&bd, &srd, buffer);
-}
-
-void XModelMesh::CreateColoredSquare(ID3D11Device* device, ID3D11Buffer** buffer, float drawX, float drawY, int width, int height, XMFLOAT3 color)
-{
-	float a = 1.0F / 400.0F; //0.002500 //Half Screen Width.  //Converted To Texel Value.
-	float b = 1.0F / 300.0F; //0.003333 //Half Screen Height. //Converted To Texel Value.
-
-	float nX = -1.0F + (drawX * a);
-	float nY = 1.0F - ((drawY + height) * b);
-
-	float pX = -1.0F + ((drawX + width) * a);
-	float pY = 1.0F - (drawY * b);
-
-	VertexPositionColor square[6]
-	{
-		{ nX,  pY, 0.0f,	color.x, color.y, color.z}, 
-		{ pX,  nY, 0.0f,	color.x, color.y, color.z}, 
-		{ nX,  nY, 0.0f,	color.x, color.y, color.z}, 
-
-		{ pX,  nY, 0.0f,	color.x, color.y, color.z}, 
-		{ nX,  pY, 0.0f,	color.x, color.y, color.z},
-		{ pX,  pY, 0.0f,	color.x, color.y, color.z},
-	};
-
-	// create the vertex buffer
-	D3D11_BUFFER_DESC bd = { 0 };
-	bd.ByteWidth = sizeof(VertexPositionColor) * ARRAYSIZE(square);
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-
-	D3D11_SUBRESOURCE_DATA srd = { square, 0, 0 };
-
-	device->CreateBuffer(&bd, &srd, buffer);
+	*/
 }
 
 void XModelMesh::CreateCubeObject(ID3D11Device* device, float xPos, float yPos, float zPos)
@@ -70,20 +79,27 @@ void XModelMesh::CreateCubeObject(ID3D11Device* device, float xPos, float yPos, 
 	// create vertices to represent the corners of the Hypercraft
 	VertexPositionTexture OurVertices[] =
 	{
-		{xPos + -1.0f, yPos + -1.0f, zPos + 1.0f,    0.0f, 0.0f},    // side 1
-		{xPos + 1.0f, yPos + -1.0f, zPos + 1.0f,     0.0f, 1.0f},
-		{xPos + -1.0f, yPos + 1.0f, zPos + 1.0f,    1.0f, 0.0f},
-		{xPos + 1.0f, yPos + 1.0f, zPos + 1.0f,       1.0f, 1.0f},
+		//Texture
+		//0,1 - 0,0 - 1,1 - 1-0 Clockwise Starting from Bottom.
 
-		{xPos + -1.0f, yPos + -1.0f, zPos + -1.0f,   0.0f, 0.0f},    // side 2
-		{xPos + -1.0f, yPos + 1.0f, zPos + -1.0f,    0.0f, 1.0f},
-		{xPos + 1.0f, yPos + -1.0f, zPos + -1.0f,   1.0f, 0.0f},
-		{xPos + 1.0f, yPos + 1.0f, zPos + -1.0f,     1.0f, 1.0f},
+		//BACK
+		//BR,TR,BL,TL
+		{xPos + 1.0f,  yPos + -1.0f, zPos + 1.0f,  0.0f, 1.0f},
+		{xPos + 1.0f,  yPos + 1.0f, zPos + 1.0f,  0.0f, 0.0f},
+		{xPos + -1.0f,  yPos + -1.0f, zPos + 1.0f,  1.0f, 1.0f},
+		{xPos + -1.0f,  yPos + 1.0f, zPos + 1.0f,  1.0f, 0.0f},
+
+		//FRONT
+		//BL,TL,BR,TR
+		{xPos + -1.0f, yPos + -1.0f, zPos + -1.0f,  0.0f, 1.0f},
+		{xPos + -1.0f, yPos + 1.0f, zPos + -1.0f,  0.0f, 0.0f},
+		{xPos + 1.0f, yPos + -1.0f, zPos + -1.0f,  1.0f, 1.0f},
+		{xPos + 1.0f, yPos + 1.0f, zPos + -1.0f,  1.0f, 0.0f},
 
 		{xPos + -1.0f, yPos + 1.0f, zPos + -1.0f,     0.0f, 0.0f},    // side 3
 		{xPos + -1.0f, yPos + 1.0f, zPos + 1.0f,      0.0f, 1.0f},
 		{xPos + 1.0f, yPos + 1.0f, zPos + -1.0f,      1.0f, 0.0f},
-		{xPos + 1.0f, yPos + 1.0f, zPos + 1.0f,    1.0f, 1.0f},
+		{xPos + 1.0f, yPos + 1.0f, zPos + 1.0f,		1.0f, 1.0f},
 
 		{xPos + -1.0f, yPos + -1.0f, zPos + -1.0f,  0.0f, 0.0f},    // side 4
 		{xPos + 1.0f,  yPos + -1.0f, zPos + -1.0f,    0.0f, 1.0f},
@@ -148,5 +164,4 @@ void XModelMesh::CreateCubeObject(ID3D11Device* device, float xPos, float yPos, 
 	D3D11_SUBRESOURCE_DATA isrd = { IndexStorage, 0, 0 };
 
 	device->CreateBuffer(&ibd, &isrd, &indexbuffer);
-
 }

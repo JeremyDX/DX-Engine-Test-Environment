@@ -2,6 +2,7 @@
 
 #include "VertexStructureTypes.h"
 #include "TextureResource.h"
+#include "FontResource.h"
 
 using namespace Microsoft::WRL;
 
@@ -15,8 +16,8 @@ class XModelMesh
 		int index_count = 0;
 
 	public:
-		void CreateTexturedSquare(ID3D11Device * device, ID3D11Buffer** buffer, float drawX, float drawY, TextureResource resource);
-		void CreateColoredSquare(ID3D11Device* device, ID3D11Buffer** buffer, float drawX, float drawY, int width, int height, XMFLOAT3 color);
+		void CreateTexturedSquare(ID3D11Device * device, ID3D11Buffer ** buffer);
+		void DrawString(ID3D11Device * device, FontResource resource, std::string text, float drawX, float drawY);
 		void CreateCubeObject(ID3D11Device *device, float xPos, float yPos, float zPos);
 
 		ComPtr<ID3D11Buffer> vertexbuffer;
