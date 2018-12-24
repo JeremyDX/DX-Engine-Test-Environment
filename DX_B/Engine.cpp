@@ -183,17 +183,13 @@ void Engine::Initialize()
 
 	D3D11_SAMPLER_DESC samplerDesc = {};
 
-	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
 	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 	samplerDesc.MipLODBias = 0.0f;
 	samplerDesc.MaxAnisotropy = 1;
-	samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-	samplerDesc.BorderColor[0] = 0;
-	samplerDesc.BorderColor[1] = 0;
-	samplerDesc.BorderColor[2] = 0;
-	samplerDesc.BorderColor[3] = 0;
+	samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 	samplerDesc.MinLOD = 0;
 	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
@@ -303,42 +299,9 @@ void Engine::CreateGeometry()
 	model_mesh.CreateCubeObject(device.Get(), 0.0F, 0.0F, 16.0F);
 	model_mesh.CreateCubeObject(device.Get(), 0.0F, 0.0F, 12.0F);
 	model_mesh.CreateCubeObject(device.Get(), 0.0F, 0.0F, 8.0F);
-	model_mesh.CreateTexturedSquare(device.Get(), vertexbuffer.GetAddressOf());
 
 	font_resource.CreateGlyphMapping();
-	font_resource.AddStringToBuffer(viewport, L"S S S S S S S S SSSSSSS", 10, 10);
-
-	font_resource.AddStringToBuffer(viewport, L"S S S S S S S S SSSSSSS", 10, 60);
-
-	font_resource.AddStringToBuffer(viewport, L"S S S S S S S S SSSSSSS", 10, 120);
-
-	font_resource.AddStringToBuffer(viewport, L"S S S S S S S S SSSSSSS", 10, 190);
-
-	font_resource.AddStringToBuffer(viewport, L"S S S S S S S S SSSSSSS", 10, 270);
-
-	font_resource.AddStringToBuffer(viewport, L"S", 10, 320);
-	font_resource.AddStringToBuffer(viewport, L"S", 30, 320);
-	font_resource.AddStringToBuffer(viewport, L"S", 50, 320);
-	font_resource.AddStringToBuffer(viewport, L"S", 70, 320);
-	font_resource.AddStringToBuffer(viewport, L"S", 90, 320);
-	font_resource.AddStringToBuffer(viewport, L"S", 110, 320);
-	font_resource.AddStringToBuffer(viewport, L"S", 130, 320);
-	font_resource.AddStringToBuffer(viewport, L"S", 150, 320);
-	font_resource.AddStringToBuffer(viewport, L"S", 170, 320);
-	font_resource.AddStringToBuffer(viewport, L"S", 190, 320);
-	font_resource.AddStringToBuffer(viewport, L"S", 210, 320);
-	font_resource.AddStringToBuffer(viewport, L"S", 230, 320);
-	font_resource.AddStringToBuffer(viewport, L"S", 250, 320);
-
-	font_resource.AddStringToBuffer(viewport, L"S", 10, 370);
-	font_resource.AddStringToBuffer(viewport, L"S", 30, 370);
-	font_resource.AddStringToBuffer(viewport, L"S", 50, 370);
-	font_resource.AddStringToBuffer(viewport, L"S", 70, 370);
-	font_resource.AddStringToBuffer(viewport, L"S", 100, 370);
-	font_resource.AddStringToBuffer(viewport, L"S", 140, 370);
-	font_resource.AddStringToBuffer(viewport, L"S", 190, 370);
-	font_resource.AddStringToBuffer(viewport, L"S", 250, 370);
-
+	font_resource.AddStringToBuffer(viewport, L"Hello World!\nTesting Line 2\n{Testing Line 3\n}Special Test", 0, 0);
 	font_resource.PushStringsToDeviceBuffer(device.Get());
 }
 
@@ -579,7 +542,6 @@ void Engine::Render()
 	{
 		context->PSSetShaderResources(0, 1, font_texture.GetAddressOf());
 		context->IASetVertexBuffers(0, 1, font_resource.buffer.GetAddressOf(), &stride, &offset);
-		context->PSSetSamplers(0, 1, &sampler);
 		context->Draw(font_resource.GetSize(), 0);
 	}
 
