@@ -16,6 +16,8 @@ class CameraEngine
 		void UpdateViewMatrix();
 		void InitializeCameraPosition();
 
+		bool ProcessCameraChanges();
+
 	public:
 		static uint16 DEGREE_LOOKUP_TABLE[91];
 

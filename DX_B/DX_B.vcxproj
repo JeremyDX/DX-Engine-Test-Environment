@@ -257,12 +257,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CameraEngine.h" />
+    <ClInclude Include="ContentLoader.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="FileReaderWriter.h" />
     <ClInclude Include="FontResource.h" />
-    <ClInclude Include="FontString.h" />
+    <ClInclude Include="ContentWindow.h" />
+    <ClInclude Include="GameTime.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="ScreenManager.h" />
     <ClInclude Include="VertexStructureTypes.h" />
     <ClInclude Include="XGameInput.h" />
     <ClInclude Include="XModelMesh.h" />
@@ -270,9 +273,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CameraEngine.cpp" />
+    <ClCompile Include="ContentLoader.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="FileReaderWriter.cpp" />
     <ClCompile Include="FontResource.cpp" />
+    <ClCompile Include="ContentWindow.cpp" />
+    <ClCompile Include="GameTime.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -284,6 +290,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="ScreenManager.cpp" />
     <ClCompile Include="VertexStructureTypes.cpp" />
     <ClCompile Include="XGameInput.cpp" />
     <ClCompile Include="XModelMesh.cpp" />
@@ -300,7 +307,7 @@
     <ResourceCompile Include="DX_B.rc" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="PositionColor.hlsl">
+    <FxCompile Include="TexturePositionColor.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Compute</ShaderType>

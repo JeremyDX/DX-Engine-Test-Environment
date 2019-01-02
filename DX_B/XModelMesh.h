@@ -9,7 +9,7 @@ using namespace Microsoft::WRL;
 class XModelMesh
 {
 	private:
-		VertexPositionTexture VertexStorage[1024];
+		VertexPositionColorTexture VertexStorage[1024];
 		short IndexStorage[1024];
 
 		int vertex_count = 0;
@@ -17,8 +17,6 @@ class XModelMesh
 
 	public:
 		void CreateTexturedSquare(ID3D11Device * device, D3D11_VIEWPORT view, ID3D11Buffer ** buffer);
-		void CreateGlyphSquare(ID3D11Device * device, int glyphId, D3D11_VIEWPORT view, ID3D11Buffer ** buffer);
-		void DrawString(ID3D11Device * device, FontResource resource, std::string text, float drawX, float drawY);
 		void CreateCubeObject(ID3D11Device *device, float xPos, float yPos, float zPos);
 
 		ComPtr<ID3D11Buffer> vertexbuffer;

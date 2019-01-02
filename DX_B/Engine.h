@@ -5,7 +5,8 @@
 #include "VertexStructureTypes.h"
 #include "XGameInput.h"
 #include "XModelMesh.h"
-
+#include "ContentLoader.h"
+#include "GameTime.h"
 
 using namespace Microsoft::WRL;
 using namespace Windows::UI::Core;
@@ -16,12 +17,13 @@ class Engine
 
 	struct HLSLBuffer
 	{
-		XMMATRIX view_matrix;
+		XMFLOAT4X4 view_matrix;
 	};
 
 	public:
-		ComPtr<ID3D11Device1> device;			// the device interface
-		ComPtr<ID3D11DeviceContext1> context;	// the device context interface
+		static ComPtr<ID3D11Device1> device;			// the device interface
+		static ComPtr<ID3D11DeviceContext1> context;	// the device context interface
+		static D3D11_VIEWPORT viewport;
 
 		ComPtr<IDXGISwapChain1> swapchain;      // the swap chain interface
 		ComPtr<ID3D11RenderTargetView> rendertarget;
@@ -29,7 +31,9 @@ class Engine
 		ComPtr<ID3D11VertexShader> vertexshader;
 		ComPtr<ID3D11PixelShader> pixelshader;
 		ComPtr<ID3D11InputLayout> inputlayout;
-		ComPtr<ID3D11Buffer> constantbuffer;
+
+		ComPtr<ID3D11Buffer> d3d_const_buffer;
+		ComPtr<ID3D11Buffer> d2d_const_buffer;
 
 		ComPtr<ID3D11Buffer> vertexbuffer;
 
@@ -55,30 +59,22 @@ class Engine
 		ComPtr<ID3D11RenderTargetView> alt_rendertarget;
 		ComPtr<ID3D11ShaderResourceView> alt_shadertexture;
 
-		D3D11_VIEWPORT viewport;
+		//static ComPtr<ID3D11ShaderResourceView*> __textures_alias;
 
 	private:
 		FileReaderWriter file_reader;
 		CameraEngine camera;
 		FontResource font_resource;
 		XModelMesh model_mesh;
-		float time;
-		int camX, camY;
-		int TEST_STATE = 0;
 		uint16 controller_input;
 
 	public:
 		Engine();
 		~Engine();
 		void Initialize();
-		void PreRenderUIComponents();
-		void CreateGeometry();
 		void CreatePipeline();
+		void CreateDynamicBuffer();
 		void Update();
-
-		void BeginRender2D();
-
-		void EndRender2D();
 
 		void Render();
 };

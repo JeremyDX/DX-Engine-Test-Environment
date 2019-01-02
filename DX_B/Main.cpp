@@ -1,6 +1,7 @@
 // Include the precompiled headers
 #include "pch.h"
 #include "Engine.h"
+#include "GameTime.h"
 
 
 // Use some common namespaces to simplify the code
@@ -13,6 +14,8 @@ using namespace Windows::System;
 using namespace Windows::Foundation;
 using namespace Windows::Graphics::Display;
 using namespace Platform;
+
+using namespace Windows::UI::ViewManagement;
 
 
 // the class definition for the core "framework" of our app
@@ -57,13 +60,15 @@ ref class Main sealed : public IFrameworkView
 
 			engine.Initialize();
 
-			// repeat until window closes
+			GameTime::Begin();
+
 			while (!WindowClosed)
-			{
+			{	
 				Window->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
-	
+				
 				engine.Update();
 				engine.Render();
+				GameTime::Tick();
 			}
 		}
 

@@ -13,3 +13,5 @@
 #include <memory>
 #include <agile.h>
 #include <concrt.h>
+#include "Engine.h"
+#include "VertexStructureTypes.h"

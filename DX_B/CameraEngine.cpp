@@ -98,6 +98,7 @@ float CameraEngine::GetCosine(int lookup)
 		return (float)(-DEGREE_LOOKUP_TABLE[degree] * 0.000015625);
 	else if (quadrant == 3)
 		return (float)(DEGREE_LOOKUP_TABLE[90 - degree] * 0.000015625);
+	return 0.0F;
 }
 
 //Operation does not support negative input no checks. 
@@ -114,6 +115,7 @@ float CameraEngine::GetSin(int lookup)
 		return (float)(-DEGREE_LOOKUP_TABLE[90 - degree] * 0.000015625);
 	else if (quadrant == 3)
 		return (float)(-DEGREE_LOOKUP_TABLE[degree] * 0.000015625);
+	return 0.0F;
 }
 
 
@@ -185,6 +187,100 @@ void CameraEngine::InitializeCameraPosition()
 	view_matrix._44 = 1.0F;
 
 	OutputDebugString(L"Hello World!!!!");
+}
+
+bool CameraEngine::ProcessCameraChanges()
+{
+	XINPUT_GAMEPAD loaded_pad = XGameInput::GamePad();
+
+	signed short right_strength = loaded_pad.sThumbLX; //Move Left Right Joystick.
+	signed short forward_strength = loaded_pad.sThumbLY; //Move Forward Back Joystick.
+
+	signed short turn_strength = loaded_pad.sThumbRX; //Turn Left Right Joystick.
+	signed short look_strength = loaded_pad.sThumbRY; //Look Up Down Joystick.
+
+	unsigned int abs_forward = forward_strength * forward_strength;
+	unsigned int abs_right = right_strength * right_strength;
+	unsigned int abs_turn = turn_strength * turn_strength;
+	unsigned int abs_look = look_strength * look_strength;
+
+	unsigned int dead_zone =  6400 * 6400; //Should be about at least 20% of joystick needs to be pressed. 
+
+	bool updated = false;
+
+	//If the player did in fact turn updated the camera movement vectors. 
+	if (abs_turn > dead_zone)
+	{
+		rotation.y += turn_strength * 2;
+		//rotation.y = 32768 * 10;
+
+		//0xB40000 = 360 * 32768 in hex form.
+		if (rotation.y < 0) 
+			rotation.y += 0xB40000;
+		if (rotation.y >= 0xB40000)
+			rotation.y -= 0xB40000;
+
+		float value = rotation.y / 32768.0F;
+		double PI = 3.14159265;
+
+		forward.x = (float)sin(value * PI / 180);
+		forward.z = (float)cos(value * PI / 180);
+
+		int var = (rotation.y + 0x2D0000);
+		if (var >= 0xB40000)
+			var -= 0xB40000;
+		value = var / 32768.0F;
+
+		right.x = (float)sin(value * PI / 180);  //Right Vector X without Up Vector.
+		right.z = (float)cos(value * PI / 180);  //Right Vector Z without Up Vector.
+
+		updated = true;
+	}
+
+	if (abs_look > dead_zone)
+	{
+		rotation.x -= look_strength * 2;
+		//rotation.x = 32768 * 10;
+
+		//0x230000 = Hex version of 70.0.
+		//We force the Look rotation to a range of -70 degrees and 70 degrees.
+		if (rotation.x < -0x230000)
+			rotation.x = -0x230000;
+		if (rotation.x > 0x230000)
+			rotation.x = 0x230000;
+
+		signed int camera_rotation = rotation.x;
+		double PI = 3.14159265;
+
+		//Now we have a postive value between 0-70 (positive) or 290-359 (negative). 
+		if (camera_rotation < 0)
+			camera_rotation += 0xB40000;
+
+		float value = camera_rotation / 32768.0F;
+
+		right.y = (float)sin(value * PI / 180);
+		up.y = (float)cos(value * PI / 180);
+
+		updated = true;
+	}
+
+	if (abs_forward > dead_zone)
+	{
+		float strength = (float)(forward_strength * 0.00003125 * 0.15);
+		position.x += strength * forward.x;
+		position.z += strength * forward.z;
+		updated = true;
+	}
+
+	if (abs_right > dead_zone)
+	{
+		float strength = (float)(right_strength * 0.00003125 * 0.15);
+		position.x += strength * right.x;
+		position.z += strength * right.z;
+		updated = true;
+	}
+
+	return updated;
 }
 
 

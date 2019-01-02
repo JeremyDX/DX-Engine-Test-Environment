@@ -2,7 +2,7 @@ Texture2D Texture;
 SamplerState ss;
 
 // Pixel Shader
-float4 main(float4 position : SV_POSITION, float2 texcoord : TEXCOORD) : SV_TARGET
+float4 main(float4 position : SV_POSITION, float4 color : COLOR, float2 texcoord : TEXCOORD) : SV_TARGET
 {
-	return Texture.Sample(ss, texcoord);
+	return color * Texture.Sample(ss, texcoord);
 }

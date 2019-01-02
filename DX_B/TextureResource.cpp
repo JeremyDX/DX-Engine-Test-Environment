@@ -1,13 +1,13 @@
 #include "pch.h"
 #include "TextureResource.h"
 
-
-ID3D11ShaderResourceView* TextureResource::GetTexture()
+TextureResource::TextureResource()
 {
-	return nullptr;
+
 }
 
-HRESULT TextureResource::CreateFromFile(ID3D11Device1* device, LPCSTR fileName)
+TextureResource::~TextureResource()
 {
-	return CreateWICTextureFromFile(device, nullptr, L"Wood.png", nullptr, &m_texture, 0);
+	if(m_texture.Get() != NULL)
+		m_texture.Get()->Release();
 }
