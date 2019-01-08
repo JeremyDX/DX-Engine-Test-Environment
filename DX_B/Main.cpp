@@ -68,24 +68,16 @@ ref class Main sealed : public IFrameworkView
 			// Obtain a pointer to the window
 			CoreWindow^ Window = CoreWindow::GetForCurrentThread();
 
-			//ScreenManager::UpdatePreferredCanvasSize(720, 1280);
 			ScreenManager::UpdatePreferredCanvasSize(1080, 1920);
+
 			engine.Initialize();
 
-			GameTime::Begin();
-
-			Window->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
-			engine.Update();
-
 			while (!WindowClosed)
-			{	
-				engine.Render();
-
-				GameTime::Tick();
-
+			{
 				Window->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
-				
 				engine.Update();
+				engine.Render();
+				GameTime::Tick();
 			}
 		}
 
