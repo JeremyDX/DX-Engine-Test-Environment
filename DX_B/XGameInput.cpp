@@ -2,55 +2,54 @@
 
 #include "XGameInput.h"
 
-XINPUT_GAMEPAD lastpad;
 XINPUT_GAMEPAD gamepad;
 
-uint32 holdTimes[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+uint16_t BUTTONS_HOLD = 0;
+uint16_t BUTTONS_PRESSED = 0;
+uint16_t BUTTONS_RELEASED = 0;
 
-// 0 = Inactive Buttton, 1 = Button is Released, 2 = Button is Presssed, 4 = Button is Held.
-int8 buttonstate[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+uint16_t HOLD_TRACKING = 0;
+uint64_t TRACKING_BEGIN = 0;
 
+uint32_t CURRENT = 0;
 
 bool XGameInput::LoadController()
 {
-	XINPUT_STATE state;
+	uint64_t TIME_STAMP = GameTime::AbsoluteFrameTicks();
 
-	ZeroMemory(&state, sizeof(XINPUT_STATE));
-	ZeroMemory(&buttonstate, sizeof(buttonstate));
+	XINPUT_STATE xstate;
+	ZeroMemory(&xstate, sizeof(XINPUT_STATE));
 
-	if (XInputGetState(0, &state) == 0L)
+	if (XInputGetState(0, &xstate) == 0L)
 	{
-		lastpad = gamepad;
-		gamepad = state.Gamepad;
+		gamepad = xstate.Gamepad;
 
-		for (int i = 0; i < 16; ++i)
-		{
-			if ((lastpad.wButtons & (1 << i)) == (1 << i))
-			{
-				///Last Frame Button Was Pressed.
-				if ((gamepad.wButtons & (1 << i)) == (1 << i))
-				{
-					++holdTimes[i];
-					///Current Frame Button Was Pressed, Button is being Held.
-					buttonstate[i] |= 4;
-				}
-				else {
-					///Current Frame Button is Released.
-					buttonstate[i] |= 1;
-				}
-			}
-			else {
-				if ((gamepad.wButtons & (1 << i)) == (1 << i))
-				{
-					holdTimes[i] = 0; ///Reset The Held Time When A New Occurance Is Pressed.
-					buttonstate[i] |= 2;
-				}
-			}
-		}
+		uint64_t LAST = CURRENT;
+
+		CURRENT = gamepad.wButtons;
+
+		BUTTONS_HOLD = LAST & CURRENT;
+		BUTTONS_RELEASED = LAST ^ BUTTONS_HOLD;
+		BUTTONS_PRESSED = CURRENT ^ BUTTONS_HOLD;
+
+		if((BUTTONS_HOLD & HOLD_TRACKING) != HOLD_TRACKING)
+			TRACKING_BEGIN = GameTime::AbsoluteFrameTicks();
 
 		return 1;
 	}
 	return 0;
+}
+
+uint64_t XGameInput::GetTrackedHoldTime(uint16_t value)
+{
+	HOLD_TRACKING = value;
+	return GameTime::AbsoluteFrameTicks() - TRACKING_BEGIN;
+}
+
+void XGameInput::ResetHoldTracking()
+{
+	HOLD_TRACKING = XBOX_CONTROLLER::ALL_BUTTONS;
+	TRACKING_BEGIN = GameTime::AbsoluteFrameTicks();
 }
 
 uint16 XGameInput::GetLeftStickX()
@@ -83,26 +82,32 @@ uint16 XGameInput::GetButtonBitSet()
 	return gamepad.wButtons;
 }
 
-uint32 XGameInput::GetHoldTimeOnBit(int index)
+bool XGameInput::ExactButtonsPressed(int value)
 {
-	return holdTimes[index];
+	return (BUTTONS_PRESSED & value) == value;
 }
 
-int8 XGameInput::GetButtonState(int index)
+bool XGameInput::ExactButtonsReleased(int value)
 {
-	return buttonstate[index];
+	return (BUTTONS_RELEASED & value) == value;
 }
 
-bool XGameInput::Compare(int value, int compare)
+bool XGameInput::ExactButtonsHolding(int value)
 {
-	if ((value & compare) == compare)
-		return 0x1;
-	return 0x0;
+	return (BUTTONS_HOLD & value) == value;
 }
 
-bool XGameInput::Compare(int compare)
+uint16_t XGameInput::AnyButtonsPressed(int value)
 {
-	if ((gamepad.wButtons & compare) == compare)
-		return 0x1;
-	return 0x0;
+	return BUTTONS_PRESSED & value;
+}
+
+uint16_t XGameInput::AnyButtonsReleased(int value)
+{
+	return BUTTONS_RELEASED & value;
+}
+
+uint16_t XGameInput::AnyButtonsHolding(int value)
+{
+	return BUTTONS_HOLD & value;
 }

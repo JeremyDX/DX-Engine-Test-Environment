@@ -10,8 +10,8 @@ public:
 	static void PresentOverlay(int index);
 	static void LoadContentStage(int index);
 	static ContentWindow GetCurrentWindow();
-	static TextureResource GetTextureResource(int index);
-	static auto GetTextureAddress(int index);
+	static TextureResource& GetTextureResource(int index);
+	static ID3D11ShaderResourceView** GetTextureAddress(int index);
 	static ComPtr<ID3D11ShaderResourceView> GetTextureComResource(int index);
 	static void UpdateDynamicStringBuffer(const char* text, int length, int font_id);
 

@@ -29,25 +29,35 @@ ref class Main sealed : public IFrameworkView
 	// some functions called by Windows
 		virtual void Initialize(CoreApplicationView^ AppView)
 		{
+
 			AppView->Activated += ref new TypedEventHandler
 				<CoreApplicationView^, IActivatedEventArgs^>(this, &Main::OnActivated);
 			CoreApplication::Suspending +=
 				ref new EventHandler<SuspendingEventArgs^>(this, &Main::Suspending);
 			CoreApplication::Resuming +=
 				ref new EventHandler<Object^>(this, &Main::Resuming);
+			
 		}
 
 		virtual void SetWindow(CoreWindow^ Window)
 		{
 			Window->Closed += ref new TypedEventHandler
 				<CoreWindow^, CoreWindowEventArgs^>(this, &Main::Closed);
+
+			::Windows::UI::Input::PointerVisualizationSettings ^ h_visualization_settings{ ::Windows::UI::Input::PointerVisualizationSettings::GetForCurrentView() };
+			h_visualization_settings->IsContactFeedbackEnabled = false;
+			h_visualization_settings->IsBarrelButtonFeedbackEnabled = false;
+			::Windows::UI::ViewManagement::ApplicationView ^ h_view { 
+				::Windows::UI::ViewManagement::ApplicationView::GetForCurrentView() 
+			};
+			h_view->FullScreenSystemOverlayMode = ::Windows::UI::ViewManagement::FullScreenSystemOverlayMode::Minimal;
 		}
 
 		virtual void Load(String^ EntryPoint) {}
 
 		void Closed(CoreWindow^ sender, CoreWindowEventArgs^ args)
 		{
-			WindowClosed = true;    // time to end the endless loop
+			WindowClosed = true;
 		}
 
 		void Suspending(Object^ Sender, SuspendingEventArgs^ Args) {}
@@ -58,17 +68,24 @@ ref class Main sealed : public IFrameworkView
 			// Obtain a pointer to the window
 			CoreWindow^ Window = CoreWindow::GetForCurrentThread();
 
+			//ScreenManager::UpdatePreferredCanvasSize(720, 1280);
+			ScreenManager::UpdatePreferredCanvasSize(1080, 1920);
 			engine.Initialize();
 
 			GameTime::Begin();
 
+			Window->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+			engine.Update();
+
 			while (!WindowClosed)
 			{	
+				engine.Render();
+
+				GameTime::Tick();
+
 				Window->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
 				
 				engine.Update();
-				engine.Render();
-				GameTime::Tick();
 			}
 		}
 

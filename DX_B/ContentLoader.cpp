@@ -9,7 +9,7 @@ int ContentLoader::m_index, ContentLoader::s_index, ContentLoader::dynamic_inter
 
 void ContentLoader::PresentWindow(int index)
 {
-	ContentWindow::ticks = 0;
+	GameTime::ResetWindowTimeStamp();
 	m_index = index;
 }
 
@@ -28,16 +28,14 @@ ContentWindow ContentLoader::GetCurrentWindow()
 	return interfaces[m_index];
 }
 
-TextureResource ContentLoader::GetTextureResource(int index)
+TextureResource& ContentLoader::GetTextureResource(int index)
 {
 	return texture_resources[index];
 }
 
-auto ContentLoader::GetTextureAddress(int index)
+ID3D11ShaderResourceView** ContentLoader::GetTextureAddress(int index)
 {
-	ComPtr<ID3D11ShaderResourceView> resource;
-	resource = texture_resources[index].m_texture;
-	return resource.GetAddressOf();
+	return texture_resources[index].m_texture.GetAddressOf();
 }
 
 ComPtr<ID3D11ShaderResourceView> ContentLoader::GetTextureComResource(int index)
@@ -60,7 +58,7 @@ void ContentLoader::LoadHeaderInformation(int stage)
 	texture_resources = new TextureResource[7];
 	max_textures = 7;
 
-	VertexPositionColorTexture vertsToDraw[4096];
+	Vertex32Byte vertsToDraw[4096];
 
 	vertsToDraw[0] = { -1.0F,  1.0F,  0.0f,		1.0F, 1.0F, 1.0F,	0.0F, 0.0F};
 	vertsToDraw[1] = {  1.0F, -1.0F,  0.0f,		1.0F, 1.0F, 1.0F,	1.0F, 1.0F};
@@ -102,7 +100,7 @@ void ContentLoader::LoadHeaderInformation(int stage)
 	fonts[3].texture_width = 348;
 	fonts[3].texture_height = 193;
 
-	Vertex3F v = {1.0F, 1.0F, 1.0F};
+	Float3 v = {1.0F, 1.0F, 1.0F};
 
 	int begin = 6;
 	int offset = fonts[1].AddStringToBuffer(L"Developed By", vertsToDraw, v, 6, 0, 50, 1);
@@ -131,34 +129,46 @@ void ContentLoader::LoadHeaderInformation(int stage)
 
 	begin = offset;
 
+	Float3 Green = { 0.0F, 1.0F, 0.0F };
 	offset = fonts[1].AddStringToBuffer(L"Undead Survival", vertsToDraw, v, offset, 0, 10, 1);
 	offset = fonts[1].AddStringToBuffer(L"Game Engine", vertsToDraw, v, offset, 0, 130, 1);
 
-	interfaces[2].state_changes = 1;
-	interfaces[2].state_change_alias[0] = 2;
 	interfaces[2].state_vertex_offsets[0] = begin;
 	interfaces[2].state_vertex_sizes[0] = offset - begin;
+
+	begin = offset;
+
+	offset = XModelMesh::CreateTexturedSquare(vertsToDraw, offset, Green, 360, 360, 50, 300);
+	offset = XModelMesh::CreateTexturedSquare(vertsToDraw, offset, v, 360, 360, 460, 300);
+	offset = XModelMesh::CreateTexturedSquare(vertsToDraw, offset, v, 360, 360, 870, 300);
+
+	interfaces[2].state_vertex_offsets[1] = begin;
+	interfaces[2].state_vertex_sizes[1] = offset - begin;
+	
+	interfaces[2].state_changes = 2;
+	interfaces[2].state_change_alias[0] = 2; //Title Text.
+	interfaces[2].state_change_alias[1] = 6; //Bottom Images.
+	
 	interfaces[2].SetUpdateProc(0);
 
 	D3D11_BUFFER_DESC bd = { 0 };
-	bd.ByteWidth = sizeof(VertexPositionColorTexture) * offset;
+	bd.ByteWidth = sizeof(Vertex32Byte) * offset;
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
 	float *floatVersion = new float[offset * 8];
 	int n = -1;
 	for (int i = 0; i < offset; ++i)
 	{
-		floatVersion[++n] = vertsToDraw[i].X;
-		floatVersion[++n] = vertsToDraw[i].Y;
-		floatVersion[++n] = vertsToDraw[i].Z;
+		floatVersion[++n] = vertsToDraw[i]._X;
+		floatVersion[++n] = vertsToDraw[i]._Y;
+		floatVersion[++n] = vertsToDraw[i]._Z;
 
+		floatVersion[++n] = vertsToDraw[i]._1;	
+		floatVersion[++n] = vertsToDraw[i]._2;
+		floatVersion[++n] = vertsToDraw[i]._3;
 		
-		floatVersion[++n] = vertsToDraw[i].R;	
-		floatVersion[++n] = vertsToDraw[i].G;
-		floatVersion[++n] = vertsToDraw[i].B;
-		
-		floatVersion[++n] = vertsToDraw[i].U;
-		floatVersion[++n] = vertsToDraw[i].V;
+		floatVersion[++n] = vertsToDraw[i]._U;
+		floatVersion[++n] = vertsToDraw[i]._V;
 	}
 
 	D3D11_SUBRESOURCE_DATA srd = { floatVersion, 0, 0 };
@@ -176,13 +186,14 @@ bool created = false;
 
 void ContentLoader::UpdateDynamicStringBuffer(const char* text, int length, int font_id)
 {
-	VertexPositionColorTexture vertsToDraw[12000];
+	Vertex32Byte vertsToDraw[12000];
 
 	int begin = 0;
-	Vertex3F v;
-	v.X = 1.0f;
-	v.Y = 1.0f;
-	v.Z = 1.0f;
+	Float3 v;
+	v._1 = 1.0f;
+	v._2 = 1.0f;
+	v._3 = 1.0f;
+
 	int offset = fonts[font_id].AddStringToBuffer(text, vertsToDraw, v, 0, 10, 10, 0);
 
 	dynamic_interface_buffer_size = offset;
@@ -194,7 +205,7 @@ void ContentLoader::UpdateDynamicStringBuffer(const char* text, int length, int 
 
 		Engine::context->Map(dynamic_interfaces_buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &resource); 
 		
-		memcpy(resource.pData, &vertsToDraw, sizeof(VertexPositionColorTexture) * offset);
+		memcpy(resource.pData, &vertsToDraw, sizeof(Vertex32Byte) * offset);
 		
 		Engine::context->Unmap(dynamic_interfaces_buffer.Get(), 0);
 	}

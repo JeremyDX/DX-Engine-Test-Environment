@@ -4,31 +4,28 @@
 /*
 * Loads a Full Size Texture.
 */
-void XModelMesh::CreateTexturedSquare(ID3D11Device *device, D3D11_VIEWPORT view, ID3D11Buffer** buffer)
+__int32 XModelMesh::CreateTexturedSquare(Vertex32Byte *verts, int offset, Float3 Col, int texture_width, int texture_height, int drawX, int drawY)
 {
-	/*float width = (2*413) / view.Width;
-	float height = (2*235) / view.Height;
+	float offsetX = (2*drawX) / Engine::viewport.Width;
+	float offsetY = (2*drawY) / Engine::viewport.Height;
+	float width = (2*texture_width) / Engine::viewport.Width;
+	float height = (2*texture_height) / Engine::viewport.Height;
 
-	float bottom = 1.0f - height;
-	float right = -1.0f + width;
+	float top = 1.0F - offsetY;
+	float bottom = 1.0f - height - offsetY;
 
-	VertexPositionTexture square[6]
-	{
-		{ -1.0F,  1.0F, 0.0f,	0.0F, 0.0F}, //Top Left.
-		{  right, bottom, 0.0f,	1.0F, 1.0F}, //Bottom Right.
-		{ -1.0F, bottom, 0.0f,	0.0F, 1.0F}, //Bottom Left.
+	float left = -1.0F + offsetX;
+	float right = -1.0f + width + offsetX;
 
-		{  right, bottom, 0.0f,	1.0F, 1.0F}, //Bottom Right.
-		{ -1.0F,  1.0F, 0.0f,	0.0F, 0.0F}, //Top Left.
-		{  right,  1.0F, 0.0f,	1.0F, 0.0F}, //Top Right.
-	};
+	verts[offset++] = { left, top, 0.0f, Col._1, Col._2, Col._3, 	0.0F, 0.0F }; //Top Left.
+	verts[offset++] = { right, bottom, 0.0f, Col._1, Col._2, Col._3, 	1.0F, 1.0F }; //Bottom Right.
+	verts[offset++] = { left, bottom, 0.0f, Col._1, Col._2, Col._3, 	0.0F, 1.0F }; //Bottom Left.
 
-	D3D11_BUFFER_DESC bd = { 0 };
-	bd.ByteWidth = sizeof(VertexPositionTexture) * 6;
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	verts[offset++] = { right, bottom, 0.0f, Col._1, Col._2, Col._3, 	1.0F, 1.0F }; //Bottom Right.
+	verts[offset++] = { left,  top, 0.0f, Col._1, Col._2, Col._3, 	0.0F, 0.0F }; //Top Left.
+	verts[offset++] = { right,  top, 0.0f, Col._1, Col._2, Col._3, 	1.0F, 0.0F }; //Top Right.
 
-	D3D11_SUBRESOURCE_DATA srd = { square, 0, 0 };
-	device->CreateBuffer(&bd, &srd, buffer);*/
+	return offset;
 }
 
 void XModelMesh::CreateCubeObject(ID3D11Device* device, float xPos, float yPos, float zPos)

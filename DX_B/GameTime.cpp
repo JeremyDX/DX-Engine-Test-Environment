@@ -1,128 +1,237 @@
 #include "pch.h"
 #include "GameTime.h"
 
-unsigned __int32 clock_cycles_per_second = 0;
+uint32_t clock_cycles_per_second = 0;
+
+//Used For Calculating The Absolute Frame Index.
 double seconds_per_frame = 0.0;
 
-unsigned __int64 clock_start_time = 0L;
+//Used For Calculating Elapsed Time Segments.
+double seconds_per_cycle = 0.0;
+double milis_per_cycle = 0.0;
+double micros_per_cycle = 0.0;
+double nanos_per_cycle = 0.0;
 
-unsigned __int64 current_time_stamp = 0L;
-unsigned __int64 delta_time = 0L;
-unsigned __int64 delta_highest = 0L;
-unsigned __int64 delta_lowest = 9999999999999L;
+//The Application Begin Time In CPU Cycles.
+int64_t clock_start_time = 0L;
 
-unsigned __int64 delta_frame_low = 0;
-unsigned __int64 delta_frame_high = 0;
+//The Current CPU Cycles at start of Game Loop.
+int64_t current_time_stamp = 0L;
 
-unsigned __int64 total_elapsed_time = 0L;
-unsigned __int64 total_elapsed_frames = 0L;
-unsigned __int64 total_estimated_frames = 0L;
+//This is the delta time from last frame to current time.
+int64_t delta_time = 0L;
 
+//This is the elapsed time from the start time in cpu cycles.
+int64_t total_elapsed_time = 0L;
+
+//This is our desired actual frames passed over time. This allows perfect timing in event of stalls.
+int64_t absolute_frame_ticks = 0L;
+
+//This is our actual occured render loops used for proper syncing to figure out how far we fell out of sync.
+int64_t gameloop_count = 0L;
+
+uint64_t window_frametick_start = 0L;
 
 void GameTime::Begin()
 {
 	QueryPerformanceFrequency((LARGE_INTEGER*)&clock_cycles_per_second);
 
-	unsigned __int64 clock_cycles_per_frame = clock_cycles_per_second / 60;
+	int64_t clock_cycles_per_frame = clock_cycles_per_second / 60;
 	seconds_per_frame = 1.0 / clock_cycles_per_frame;
 
-    QueryPerformanceCounter((LARGE_INTEGER*)&clock_start_time);
+	seconds_per_cycle = 1.0 / clock_cycles_per_second;
+	milis_per_cycle = seconds_per_cycle * 1000;
+	micros_per_cycle = seconds_per_cycle * 1000000;
+	nanos_per_cycle = seconds_per_cycle * 1000000000;
+
+	QueryPerformanceCounter((LARGE_INTEGER*)&clock_start_time);
 }
 
 void GameTime::Tick()
 {
-	__int64 previous_time_stamp = current_time_stamp;
+	int64_t previous_time_stamp = current_time_stamp;
+
 	QueryPerformanceCounter((LARGE_INTEGER*)&current_time_stamp);
+
 	delta_time = current_time_stamp - previous_time_stamp;
 
-	__int64 lastFrame = total_elapsed_frames;
-
 	total_elapsed_time = current_time_stamp - clock_start_time;
-	total_elapsed_frames = seconds_per_frame * total_elapsed_time;
+	absolute_frame_ticks = seconds_per_frame * total_elapsed_time;
 
-	if (total_elapsed_frames > 120)
-	{
-		if ((total_elapsed_frames - lastFrame) == 0)
-			delta_frame_low++;
-		if ((total_elapsed_frames - lastFrame) > delta_frame_high)
-			delta_frame_high = (total_elapsed_frames - lastFrame);
-	}
+	++gameloop_count;
 }
 
-__int64 GameTime::GetCurrentTimeCPUCycle()
+int64_t GameTime::CurrentTimeCPUCycles()
 {
-	__int64 time_stamp;
+	int64_t time_stamp;
 	QueryPerformanceCounter((LARGE_INTEGER*)&time_stamp);
 	return time_stamp;
 }
 
-__int64 GameTime::GetCurrentTimeMicrosecond()
+double GameTime::CurrentTimeNanos()
 {
-	__int64 time_stamp;
+	int64_t time_stamp;
 	QueryPerformanceCounter((LARGE_INTEGER*)&time_stamp);
-	return (__int64)(time_stamp * 1000000 * seconds_per_frame);
+	return time_stamp * nanos_per_cycle;
 }
 
-__int64 GameTime::GetCurrentTimeMilliseconds()
+double GameTime::CurrentTimeMicros()
 {
-	__int64 time_stamp;
+	int64_t time_stamp;
 	QueryPerformanceCounter((LARGE_INTEGER*)&time_stamp);
-	return (__int64)(time_stamp * 1000 * seconds_per_frame);
+	return time_stamp * micros_per_cycle;
 }
 
-__int64 GameTime::GetCurrentTimeSeconds()
+double GameTime::CurrentTimeMilis()
 {
-	__int64 time_stamp;
+	int64_t time_stamp;
 	QueryPerformanceCounter((LARGE_INTEGER*)&time_stamp);
-	return (__int64)(time_stamp * seconds_per_frame);
+	return time_stamp * milis_per_cycle;
 }
 
-__int64 GameTime::TotalElapsedSeconds()
+double GameTime::CurrentTimeSeconds()
 {
-	return total_elapsed_time / clock_cycles_per_second;
+	int64_t time_stamp;
+	QueryPerformanceCounter((LARGE_INTEGER*)&time_stamp);
+	return time_stamp * seconds_per_cycle;
 }
 
-__int64 GameTime::TotalElapsedMilli()
+double GameTime::ConvertCyclesToSeconds(int64_t cycles)
 {
-	return (total_elapsed_time * 1000) / clock_cycles_per_second;
+	return cycles * seconds_per_cycle;
 }
 
-__int64 GameTime::TotalElapsedMicro()
+double GameTime::ConvertCyclesToMilis(int64_t cycles)
 {
-	return (total_elapsed_time * 1000000) / clock_cycles_per_second;
+	return cycles * milis_per_cycle;
 }
 
-__int64 GameTime::TotalElapsedCPUCycles()
+double GameTime::ConvertCyclesToMicros(int64_t cycles)
+{
+	return cycles * micros_per_cycle;
+}
+
+double GameTime::ConvertCyclesToNanos(int64_t cycles)
+{
+	return cycles * nanos_per_cycle;
+}
+
+double GameTime::TotalElapsedSeconds()
+{
+	return total_elapsed_time * seconds_per_cycle;
+}
+
+double GameTime::TotalElapsedMilli()
+{
+	return total_elapsed_time * milis_per_cycle;
+}
+
+double GameTime::TotalElapsedMicro()
+{
+	return total_elapsed_time * micros_per_cycle;
+}
+
+double GameTime::TotalElapsedNanos()
+{
+	return total_elapsed_time * nanos_per_cycle;
+}
+
+int64_t GameTime::TotalElapsedCPUCycles()
 {
 	return total_elapsed_time;
 }
 
-__int64 GameTime::DeltaTime()
+int64_t GameTime::DeltaTime_CPUCycle()
 {
 	return delta_time;
 }
 
-__int64 GameTime::DeltaHighest()
+double GameTime::DeltaTime_Nano()
 {
-	return delta_highest;
+	return delta_time * nanos_per_cycle;
 }
 
-__int64 GameTime::DeltaLowest()
+double GameTime::DeltaTime_Micro()
 {
-	return delta_lowest;
+	return delta_time * micros_per_cycle;
 }
 
-__int64 GameTime::DeltaMajorLowFaults()
+double GameTime::DeltaTime_Milli()
 {
-	return delta_frame_low;
+	return delta_time * milis_per_cycle;
 }
 
-__int64 GameTime::DeltaMajorHighFaults()
+double GameTime::DeltaTime_Seconds()
 {
-	return delta_frame_high;
+	return delta_time * seconds_per_cycle;
 }
 
-__int64 GameTime::TotalElapsedFrames()
+int64_t GameTime::AbsoluteFrameTicks()
 {
-	return total_elapsed_frames;
+	return absolute_frame_ticks;
+}
+
+int64_t GameTime::TotalGameLoops()
+{
+	return gameloop_count;
+}
+
+void GameTime::ResetWindowTimeStamp()
+{
+	window_frametick_start = absolute_frame_ticks;
+}
+
+int64_t GameTime::ElapsedWindowFrameTicks()
+{
+	return absolute_frame_ticks - window_frametick_start;
+}
+
+
+bool GameTime::Sleep()
+{
+	int64_t B = 0;
+	while (B <= absolute_frame_ticks)
+	{
+		int64_t time_stamp;
+		QueryPerformanceCounter((LARGE_INTEGER*)&time_stamp);
+
+		int64_t A = time_stamp - clock_start_time;
+		B = seconds_per_frame * A;
+	}
+	return true;
+}
+
+int64_t GameTime::Sleep(int pause, int checksum)
+{
+	int64_t pause_stamp = 0L;
+	int64_t time_stamp = 0L;
+	QueryPerformanceCounter((LARGE_INTEGER*)&pause_stamp);
+	int64_t B = 0;
+	while (((time_stamp - pause_stamp) < pause) && B <= checksum)
+	{
+		QueryPerformanceCounter((LARGE_INTEGER*)&time_stamp);
+
+		int64_t A = time_stamp - clock_start_time;
+		B = A - total_elapsed_time;
+	}
+	return B;
+}
+
+void GameTime::DisplayOutputMilliseconds(int64_t timespan, unsigned loops)
+{
+	float avg_cc = (float)timespan / loops;
+	int millitime = (int)ConvertCyclesToMilis(timespan);
+	int avg_nspl = (int)(avg_cc * 1000000000 * seconds_per_cycle);
+
+	std::cout << "\nLoops: " << loops << ", Time Spent: " << millitime << "(Milli), Time Per Loop " << avg_nspl << "(Nano)\n";
+}
+
+void GameTime::DisplayOutputCPUCycles(int64_t timespan, unsigned loops)
+{
+	float avg_cc = (float)timespan / loops;
+	int millitime = timespan;
+	int avg_nspl = (int)(avg_cc * 1000000000 * seconds_per_cycle);
+
+	std::cout << "\nLoops: " << loops << ", Time Spent: " << millitime << "(CPU Cycles), Time Per Loop " << avg_nspl << "(Nano)\n";
+
 }

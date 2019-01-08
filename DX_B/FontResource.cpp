@@ -1,6 +1,157 @@
 #include "pch.h"
 #include "FontResource.h"
 
+void FontResource::SetDrawPosition(int16_t x, int16_t y)
+{
+
+}
+
+uint16_t FontResource::AddDynamicallyToBuffer(int64_t num, uint16_t offset)
+{
+	uint64_t value = num;
+	int neg = num < 0;
+	if (neg)
+		value = -num;
+	int len = 0;
+	if (value >= 1000000000) //10 Digit.
+	{
+		if (value >= 100000000000000) //15 Digit.
+		{
+			if (value >= 10000000000000000) //17 Digits.
+			{
+				if (value >= 1000000000000000000)
+					len = 19;
+				else
+				{
+					if (value >= 100000000000000000)
+						len = 18;
+					else
+						len = 17;
+				}
+			}
+			else
+			{
+				if (value >= 1000000000000000)
+					len = 16;
+				else
+				{
+					len = 15;
+				}
+			}
+		}
+		else {
+			if (value >= 100000000000) // 12 Digits.
+			{
+				if (value >= 10000000000000) //14 Digits.
+					len = 14;
+				else
+				{
+					if (value >= 1000000000000) //13 Digits.
+						len = 13;
+					else
+						len = 12; //12 Digits.
+				}
+			}
+			else
+			{
+				if (value >= 10000000000)
+					len = 11; //11 Digits.
+				else
+				{
+					len = 10; //10 Digits.
+				}
+			}
+		}
+	}
+	else {
+		if (value >= 100000) //6 Digit.
+		{
+			if (value >= 10000000)
+			{
+				if (value >= 100000000)
+					len = 9;
+				else
+					len = 8;
+			}
+			else
+			{
+				if (value >= 1000000)
+					len = 7;
+				else
+					len = 6;
+			}
+		}
+		else {
+			if (value >= 1000)
+			{
+				if (value >= 10000)
+					len = 5;
+				else
+					len = 4;
+			}
+			else
+			{
+				if (value >= 100)
+					len = 3;
+				else
+				{
+					if (value >= 10)
+						len = 2;
+					else
+						len = 1;
+				}
+			}
+		}
+	}
+
+	static const uint64_t REDUCTION[20] =
+	{
+		1,
+		1,
+		10,
+		100,
+		1000,
+		10000,
+		100000,
+		1000000,
+		10000000, //8
+		100000000,
+		1000000000,
+		10000000000,
+		100000000000,
+		1000000000000,
+		10000000000000,
+		100000000000000,
+		1000000000000000,
+		10000000000000000, //17
+		100000000000000000, //18
+		1000000000000000000, //19
+	};
+
+	if (neg)
+	{
+		++offset;
+		//Add "-" Glyph.
+	}
+
+	uint64_t reduction = REDUCTION[len];
+
+	for (int j = -1; ++j < len; )
+	{
+		int c_value = (value / reduction);
+		int glyphId = c_value | 0x30; //Force Bits 16 and 32 online.
+		value -= reduction * c_value;
+		reduction *= 0.1;
+	}
+
+	return offset;
+}
+
+uint16_t FontResource::AddDynamicallyToBuffer(const char * c, uint16_t offset)
+{
+	return offset;
+}
+
 //This is hard coded until we can get a Cache file and Process Reading From That...
 //TO DO IN FUTURE :)
 void FontResource::CreateGlyphMapping(int mapping_id)
@@ -103,25 +254,29 @@ __int32 FontResource::MeasureString(const char *text)
 	return width;
 }
 
-__int32 FontResource::AddStringToBuffer(const wchar_t *text, VertexPositionColorTexture *verts, Vertex3F color, int vert_offset, int draw_offsetX, int draw_offsetY, int alignment)
+__int32 FontResource::AddStringToBuffer(static const wchar_t *text, static Vertex32Byte *verts, Float3 color, int vert_offset, int draw_offsetX, int draw_offsetY, int alignment)
 {
 	int length = wcslen(text);
+
+	float view_width = (float)ScreenManager::PREFERRED_CANVAS_WIDTH;
+	float view_height = (float)ScreenManager::PREFERRED_CANVAS_HEIGHT;
 
 	int stringWidth = MeasureString(text);
 
 	float align = 0.0F;
 	if (alignment == 1)
 	{
-		align = Engine::viewport.Width / 2;
+		align = view_width / 2;
 		align -= stringWidth / 2;
-	} else {
-		align = Engine::viewport.Width;
+	}
+	else {
+		align = view_width;
 		align -= stringWidth;
 	}
 	align += draw_offsetX;
 
 	int offsetX = align;
-	float offsetY = (float)(draw_offsetY * 2) / Engine::viewport.Height;
+	float offsetY = (float)(draw_offsetY * 2) / view_height;
 
 	//packedfontdata[string_position] = ((vertexposition / 6) << 6) + (length & 0x3F);
 	++string_position;
@@ -132,8 +287,8 @@ __int32 FontResource::AddStringToBuffer(const wchar_t *text, VertexPositionColor
 		int glyphId = (int)text[n] - 32;
 		if (glyphId == -22)
 		{
-			offsetY += (2 * (font_size)) / Engine::viewport.Height;
-			offsetX = 0;
+			offsetY += (2 * (font_size)) / view_height;
+			offsetX = align;
 			continue;
 		}
 
@@ -141,14 +296,14 @@ __int32 FontResource::AddStringToBuffer(const wchar_t *text, VertexPositionColor
 		if (glyphId % 16 != 0)
 			charWidth = glyph_positions[glyphId] - glyph_positions[glyphId - 1] - 1;
 
-		float width  = (2 * (charWidth)) / Engine::viewport.Width;	//Quad Width vs Screen Width.
-		float offset = (2 * (offsetX))  / Engine::viewport.Width;	//Quad Width vs Screen Width.
-		float height = (2 * (font_size)) / Engine::viewport.Height;	//Quad Height vs Screen Height.
+		float width = (2 * (charWidth)) / view_width;	//Quad Width vs Screen Width.
+		float offset = (2 * (offsetX)) / view_width;	//Quad Width vs Screen Width.
+		float height = (2 * (font_size)) / view_height;	//Quad Height vs Screen Height.
 
-		float top	 =  1.0F - offsetY;
-		float bottom =  1.0f - height - offsetY;
-		float right  = -1.0f + width + offset;
-		float left   = -1.0f + offset;
+		float top = 1.0F - offsetY;
+		float bottom = 1.0f - height - offsetY;
+		float right = -1.0f + width + offset;
+		float left = -1.0f + offset;
 
 		float uR = (float)(glyph_positions[glyphId]) / texture_width;
 		float uL = (float)(glyph_positions[glyphId] - charWidth) / texture_width;
@@ -158,22 +313,22 @@ __int32 FontResource::AddStringToBuffer(const wchar_t *text, VertexPositionColor
 
 		offsetX += charWidth;
 
-		verts[vert_offset++] = { left,  top,    0.0f,	color.X, color.Y, color.Z,	uL, vT }; //Top Left.
-		verts[vert_offset++] = { right, bottom, 0.0f,	color.X, color.Y, color.Z,	uR, vB }; //Bottom Right.
-		verts[vert_offset++] = { left,  bottom, 0.0f,	color.X, color.Y, color.Z,	uL, vB }; //Bottom Left.
+		verts[vert_offset++] = { left,  top,    0.0f,	color._1, color._2, color._3,	uL, vT }; //Top Left.
+		verts[vert_offset++] = { right, bottom, 0.0f,	color._1, color._2, color._3,	uR, vB }; //Bottom Right.
+		verts[vert_offset++] = { left,  bottom, 0.0f,	color._1, color._2, color._3,	uL, vB }; //Bottom Left.
 
-		verts[vert_offset++] = { right, bottom, 0.0f,	color.X, color.Y, color.Z,	uR, vB }; //Bottom Right.
-		verts[vert_offset++] = { left,  top,    0.0f,	color.X, color.Y, color.Z,	uL, vT }; //Top Left.
-		verts[vert_offset++] = { right, top,    0.0f,	color.X, color.Y, color.Z,	uR, vT }; //Top Right.
+		verts[vert_offset++] = { right, bottom, 0.0f,	color._1, color._2, color._3,	uR, vB }; //Bottom Right.
+		verts[vert_offset++] = { left,  top,    0.0f,	color._1, color._2, color._3,	uL, vT }; //Top Left.
+		verts[vert_offset++] = { right, top,    0.0f,	color._1, color._2, color._3,	uR, vT }; //Top Right.
 	}
 	return vert_offset;
 }
 
-__int32 FontResource::AddStringToBuffer(const char *text, VertexPositionColorTexture *verts, Vertex3F color, int vert_offset, int draw_offsetX, int draw_offsetY, int alignment)
+__int32 FontResource::AddStringToBuffer(static const char *text, static Vertex32Byte *verts, Float3 color, int vert_offset, int draw_offsetX, int draw_offsetY, int alignment)
 {
 	int length = strlen(text);
-	float view_width = Engine::viewport.Width;
-	float view_height = Engine::viewport.Height;
+	float view_width = (float)ScreenManager::PREFERRED_CANVAS_WIDTH;
+	float view_height = (float)ScreenManager::PREFERRED_CANVAS_HEIGHT;
 
 	int stringWidth = MeasureString(text);
 
@@ -226,13 +381,13 @@ __int32 FontResource::AddStringToBuffer(const char *text, VertexPositionColorTex
 
 		offsetX += charWidth;
 
-		verts[vert_offset++] = { left,  top,    0.0f,	color.X, color.Y, color.Z,	uL, vT }; //Top Left.
-		verts[vert_offset++] = { right, bottom, 0.0f,	color.X, color.Y, color.Z,	uR, vB }; //Bottom Right.
-		verts[vert_offset++] = { left,  bottom, 0.0f,	color.X, color.Y, color.Z,	uL, vB }; //Bottom Left.
+		verts[vert_offset++] = { left,  top,    0.0f,	color._1, color._2, color._3,	uL, vT }; //Top Left.
+		verts[vert_offset++] = { right, bottom, 0.0f,	color._1, color._2, color._3,	uR, vB }; //Bottom Right.
+		verts[vert_offset++] = { left,  bottom, 0.0f,	color._1, color._2, color._3,	uL, vB }; //Bottom Left.
 
-		verts[vert_offset++] = { right, bottom, 0.0f,	color.X, color.Y, color.Z,	uR, vB }; //Bottom Right.
-		verts[vert_offset++] = { left,  top,    0.0f,	color.X, color.Y, color.Z,	uL, vT }; //Top Left.
-		verts[vert_offset++] = { right, top,    0.0f,	color.X, color.Y, color.Z,	uR, vT }; //Top Right.
+		verts[vert_offset++] = { right, bottom, 0.0f,	color._1, color._2, color._3,	uR, vB }; //Bottom Right.
+		verts[vert_offset++] = { left,  top,    0.0f,	color._1, color._2, color._3,	uL, vT }; //Top Left.
+		verts[vert_offset++] = { right, top,    0.0f,	color._1, color._2, color._3,	uR, vT }; //Top Right.
 	}
 	return vert_offset;
 }

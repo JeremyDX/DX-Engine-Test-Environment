@@ -7,7 +7,7 @@ struct XBOX_CONTROLLER
 {
 	public:
 
-		static const uint16
+		static const uint16_t
 
 			D_PAD_UP = 0x1,
 			D_PAD_DOWN = 0x2,
@@ -22,23 +22,31 @@ struct XBOX_CONTROLLER
 			A_BUTTON = 0x1000,
 			B_BUTTON = 0x2000,
 			X_BUTTON = 0x4000,
-			Y_BUTTON = 0x8000;
+			Y_BUTTON = 0x8000,
+		 ALL_BUTTONS = 0xF3FE;
 };
 
 class XGameInput
 {
 public:
+
 	static bool LoadController();
-	static uint16 GetLeftStickX();
-	static uint16 GetLeftStickY();
-	static uint16 GetRightStickX();
-	static uint16 GetRightStickY();
+
+	static uint64_t GetTrackedHoldTime(uint16_t value = XBOX_CONTROLLER::ALL_BUTTONS);
+	static void ResetHoldTracking();
+	static uint16_t GetLeftStickX();
+	static uint16_t GetLeftStickY();
+	static uint16_t GetRightStickX();
+	static uint16_t GetRightStickY();
 	static XINPUT_GAMEPAD& GamePad();
 	static uint16 GetButtonBitSet();
-	static uint32 GetHoldTimeOnBit(int index);
-	static int8 GetButtonState(int index);
 
-	//Checks if the "Value" contains the EXACT "Compare" value.
-	static bool Compare(int value, int compare);
-	static bool Compare(int compare);
+	static bool ExactButtonsPressed(int value);
+	static bool ExactButtonsReleased(int value);
+	static bool ExactButtonsHolding(int value);
+
+	static uint16_t AnyButtonsPressed(int value = XBOX_CONTROLLER::ALL_BUTTONS);
+	static uint16_t AnyButtonsReleased(int value = XBOX_CONTROLLER::ALL_BUTTONS);
+	static uint16_t AnyButtonsHolding(int value = XBOX_CONTROLLER::ALL_BUTTONS);
 };
+

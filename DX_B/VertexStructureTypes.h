@@ -1,45 +1,69 @@
 #pragma once
 
-struct Vector3S
+struct Float2
 {
-	signed int x, y, z;
+	float _1, _2;
 };
 
-struct Vector3U
+struct Float3
 {
-	unsigned int x, y, z;
+	float _1, _2, _3;
 };
 
-struct Vertex2F
+struct Float4
 {
-	float U, V;			// vertex position
+	float _1, _2, _3, _4;
 };
 
-struct Vertex3F
+struct Short2
 {
-	float X, Y, Z;		// vertex position
+	int16_t _1, _2;
 };
 
-struct Vertex4F
+struct Short3
 {
-	float R, G, B, A;	// vertex position
+	int16_t _1, _2, _3;
 };
 
-struct Vertex12Byte
+struct Short4
 {
-	float _X, _Y, _Z;
+	int16_t _1, _2, _3, _4;
+};
+
+struct Int2
+{
+	int32_t _1, _2;
+};
+
+struct Int3
+{
+	int32_t _1, _2, _3;
+};
+
+struct Int4
+{
+	int32_t _1, _2, _3, _4;
+};
+
+struct Long2
+{
+	int64_t _1, _2;
+};
+
+struct Long3
+{
+	int64_t _1, _2, _3;
+};
+
+struct Long4
+{
+	int64_t _1, _2, _3, _4;
 };
 
 struct Vertex20Byte
 {
 	float _X, _Y, _Z;
 	float _U, _V;
-};
-
-struct Vertex24Byte
-{
-	float _X, _Y, _Z;
-	float _1, _2, _3;
 };
 
 struct Vertex32Byte
@@ -53,51 +77,15 @@ struct Vertex44Byte
 {
 	float _X, _Y, _Z;
 	float _1, _2, _3;
-	float _4, _5, _6;
+	float _6, _7, _8;
 	float _U, _V;
 };
-
-struct VertexPositionColorx
-{
-	float X, Y, Z;		// vertex position
-	float R, G, B;		// vertex color;
-};
-
-struct VertexPositionTexturex
-{
-	float X, Y, Z;		// vertex position
-	float U, V;		// vertex color;
-};
-
-struct VertexPositionNormalx
-{
-	float X, Y, Z;		// vertex position
-	float nX, nY, nZ;	// normal direction
-};
-
-struct VertexPositionNormalTexturex
-{
-	float X, Y, Z;		// vertex position
-	float NX, NY, NZ;	// normal direction
-	float U, V;			// texture uv position
-};
-
-struct VertexPositionColorTexture
-{
-	float X, Y, Z;		// vertex position
-	float R, G, B;	// normal direction
-	float U, V;			// texture uv position
-};
-
 
 class VertexStructureTypes
 {
 	public:
 
-		static D3D11_INPUT_ELEMENT_DESC VertexStructureTypes::Position[];
-		static D3D11_INPUT_ELEMENT_DESC VertexStructureTypes::PositionColor[];
-		static D3D11_INPUT_ELEMENT_DESC VertexStructureTypes::PositionNormal[];
-		static D3D11_INPUT_ELEMENT_DESC VertexStructureTypes::PositionTexture[];
-		static D3D11_INPUT_ELEMENT_DESC VertexStructureTypes::PositionColorTexture[];
-		static D3D11_INPUT_ELEMENT_DESC VertexStructureTypes::PositionNormalxTexture[];
+		static const D3D11_INPUT_ELEMENT_DESC VertexStructureTypes::Layout_Byte20[];
+		static const D3D11_INPUT_ELEMENT_DESC VertexStructureTypes::Layout_Byte32[];
+		static const D3D11_INPUT_ELEMENT_DESC VertexStructureTypes::Layout_Byte44[];
 };

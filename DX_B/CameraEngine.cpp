@@ -144,9 +144,9 @@ void CameraEngine::InitializeCameraPosition()
 	position.y = 0.0F;
 	position.z = 0.0F;
 
-	rotation.x = 0;
-	rotation.y = 0;
-	rotation.z = 0;
+	rotation._1 = 0;
+	rotation._2 = 0;
+	rotation._3 = 0;
 
 	forward.x = 0.0f;
 	forward.y = 0.0f;
@@ -211,22 +211,22 @@ bool CameraEngine::ProcessCameraChanges()
 	//If the player did in fact turn updated the camera movement vectors. 
 	if (abs_turn > dead_zone)
 	{
-		rotation.y += turn_strength * 2;
+		rotation._2 += turn_strength * 2;
 		//rotation.y = 32768 * 10;
 
 		//0xB40000 = 360 * 32768 in hex form.
-		if (rotation.y < 0) 
-			rotation.y += 0xB40000;
-		if (rotation.y >= 0xB40000)
-			rotation.y -= 0xB40000;
+		if (rotation._2 < 0) 
+			rotation._2 += 0xB40000;
+		if (rotation._2 >= 0xB40000)
+			rotation._2 -= 0xB40000;
 
-		float value = rotation.y / 32768.0F;
+		float value = rotation._2 / 32768.0F;
 		double PI = 3.14159265;
 
 		forward.x = (float)sin(value * PI / 180);
 		forward.z = (float)cos(value * PI / 180);
 
-		int var = (rotation.y + 0x2D0000);
+		int var = (rotation._2 + 0x2D0000);
 		if (var >= 0xB40000)
 			var -= 0xB40000;
 		value = var / 32768.0F;
@@ -239,17 +239,17 @@ bool CameraEngine::ProcessCameraChanges()
 
 	if (abs_look > dead_zone)
 	{
-		rotation.x -= look_strength * 2;
+		rotation._1 -= look_strength * 2;
 		//rotation.x = 32768 * 10;
 
 		//0x230000 = Hex version of 70.0.
 		//We force the Look rotation to a range of -70 degrees and 70 degrees.
-		if (rotation.x < -0x230000)
-			rotation.x = -0x230000;
-		if (rotation.x > 0x230000)
-			rotation.x = 0x230000;
+		if (rotation._1 < -0x230000)
+			rotation._1 = -0x230000;
+		if (rotation._1 > 0x230000)
+			rotation._1 = 0x230000;
 
-		signed int camera_rotation = rotation.x;
+		signed int camera_rotation = rotation._1;
 		double PI = 3.14159265;
 
 		//Now we have a postive value between 0-70 (positive) or 290-359 (negative). 

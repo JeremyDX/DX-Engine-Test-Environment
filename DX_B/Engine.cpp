@@ -1,13 +1,22 @@
 #include "pch.h"
 #include "Engine.h"
 
+using namespace Windows::Graphics::Display;
+
+static const float VSYNC_ON = 1;
+
 static const float BackgroundColor[4] = {0.3f, 0.4f, 0.3f, 1.0f};
 
-//ComPtr<ID3D11ShaderResourceView*> Engine::__textures_alias;
+static const XMFLOAT4X4 IDENTITY_MATRIX
+{
+	1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
+};
 
-// this function initializes and prepares Direct3D for use
 void Engine::Initialize()
 {
+	DisplayInformation ^display = DisplayInformation::GetForCurrentView();
+	ScreenManager::UpdateScreenResolution(display->ScreenHeightInRawPixels, display->ScreenWidthInRawPixels);
+
 	ComPtr<ID3D11Device> temp_device;
 	ComPtr<ID3D11DeviceContext> temp_context;
 
@@ -30,11 +39,14 @@ void Engine::Initialize()
 
 	// set up the swap chain description
 	DXGI_SWAP_CHAIN_DESC1 scd = { 0 };
+	scd.Width = ScreenManager::PREFERRED_CANVAS_WIDTH;
+	scd.Height = ScreenManager::PREFERRED_CANVAS_HEIGHT;
 	scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;    // how the swap chain should be used
 	scd.BufferCount = 2;                                  // a front buffer and a back buffer
 	scd.Format = DXGI_FORMAT_B8G8R8A8_UNORM;              // the most common swap chain format
 	scd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;    // the recommended flip mode
 	scd.SampleDesc.Count = 1;                             // disable anti-aliasing
+	//scd.Windowed = false;
 
 	CoreWindow^ Window = CoreWindow::GetForCurrentThread();    // get the window pointer
 	
@@ -54,8 +66,8 @@ void Engine::Initialize()
 
 	D3D11_TEXTURE2D_DESC texd = { 0 };
 
-	texd.Width = (UINT)Window->Bounds.Width;
-	texd.Height = (UINT)Window->Bounds.Height;
+	texd.Width = ScreenManager::PREFERRED_CANVAS_WIDTH;
+	texd.Height = ScreenManager::PREFERRED_CANVAS_HEIGHT;
 	texd.ArraySize = 1;
 	texd.MipLevels = 1;
 	texd.SampleDesc.Count = 1;
@@ -68,51 +80,19 @@ void Engine::Initialize()
 
 	device->CreateDepthStencilView(zbuffertexture.Get(), NULL, &zbuffer);
 
-	D3D11_TEXTURE2D_DESC textureDesc;
-	ZeroMemory(&textureDesc, sizeof(textureDesc));
-
-	textureDesc.Width = (UINT)Window->Bounds.Width;
-	textureDesc.Height = (UINT)Window->Bounds.Height;
-	textureDesc.MipLevels = 1;
-	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	textureDesc.SampleDesc.Count = 1;
-	textureDesc.Usage = D3D11_USAGE_DEFAULT;
-	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	textureDesc.CPUAccessFlags = 0;
-	textureDesc.MiscFlags = 0;
-
-	device->CreateTexture2D(&textureDesc, NULL, &zbuffertexture2);
-
-	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
-
-	renderTargetViewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-	renderTargetViewDesc.Texture2D.MipSlice = 0;
-
-	device->CreateRenderTargetView(zbuffertexture2.Get(), &renderTargetViewDesc, alt_rendertarget.GetAddressOf());
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
-
-	shaderResourceViewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
-	shaderResourceViewDesc.Texture2D.MipLevels = 1;
-	device->CreateShaderResourceView(zbuffertexture2.Get(), &shaderResourceViewDesc, alt_shadertexture.GetAddressOf());
-
 	viewport = {0};
 
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
-	viewport.Width = Window->Bounds.Width;
-	viewport.Height = Window->Bounds.Height;
+	viewport.Width = ScreenManager::PREFERRED_CANVAS_WIDTH;
+	viewport.Height = ScreenManager::PREFERRED_CANVAS_HEIGHT;
 	viewport.MinDepth = 0.0F; 
 	viewport.MaxDepth = 1.0F;
 
 	context->RSSetViewports(1, &viewport);
 
 	D3D11_RASTERIZER_DESC rd;
-	rd.CullMode = D3D11_CULL_NONE;
+	rd.CullMode = D3D11_CULL_FRONT;
 	rd.FrontCounterClockwise = TRUE;
 	rd.DepthClipEnable = TRUE;
 	rd.ScissorEnable = FALSE;
@@ -124,13 +104,9 @@ void Engine::Initialize()
 
 	device->CreateRasterizerState(&rd, &rasterizerstate);
 
-
-
-
+	context->RSSetState(rasterizerstate.Get());
 
 	D3D11_BLEND_DESC bd;
-
-
 
 	//Allow Blending :)
 	bd.RenderTarget[0].BlendEnable = TRUE;
@@ -151,7 +127,7 @@ void Engine::Initialize()
 	bd.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
 
 	//No Operations just return the DestAlpha.
-	bd.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_DEST_ALPHA;
+	bd.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_SRC_ALPHA;
 
 	//UnsureUnused. 
 	bd.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
@@ -165,9 +141,8 @@ void Engine::Initialize()
 	device->CreateBlendState(&bd, &blendstate);
 
 	D3D11_DEPTH_STENCIL_DESC dsd = { 0 };
+
 	dsd.DepthEnable = true;
-	dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsd.DepthFunc = D3D11_COMPARISON_LESS;
 
 	device->CreateDepthStencilState(&dsd, depthonstate.GetAddressOf());
 
@@ -189,7 +164,7 @@ void Engine::Initialize()
 
 	device->CreateSamplerState(&samplerDesc, sampler.GetAddressOf());
 
-	XMMATRIX matProjection = XMMatrixPerspectiveFovLH(XMConvertToRadians(45), (FLOAT)Window->Bounds.Width / (FLOAT)Window->Bounds.Height, 1, 1000);                                                        // the far view-plane
+	XMMATRIX matProjection = XMMatrixPerspectiveFovLH(XMConvertToRadians(45), ScreenManager::ASPECT_RATIO, 1, 1000);                                                        // the far view-plane
 
 	camera.SetProjection(&matProjection);
 	camera.InitializeCameraPosition();
@@ -212,14 +187,8 @@ void Engine::CreatePipeline()
 	context->VSSetShader(vertexshader.Get(), nullptr, 0);
 	context->PSSetShader(pixelshader.Get(), nullptr, 0);
 
-	D3D11_INPUT_ELEMENT_DESC ied[3];
-
-	ied[0] = VertexStructureTypes::PositionColorTexture[0];
-	ied[1] = VertexStructureTypes::PositionColorTexture[1];
-	ied[2] = VertexStructureTypes::PositionColorTexture[2];
-
 	// create and set the input layout
-	device->CreateInputLayout(ied, ARRAYSIZE(ied), VSFile->Data, VSFile->Length, &inputlayout);
+	device->CreateInputLayout(VertexStructureTypes::Layout_Byte32, 3, VSFile->Data, VSFile->Length, &inputlayout);
 	context->IASetInputLayout(inputlayout.Get());
 
 	// define and set the constant buffer
@@ -240,38 +209,9 @@ void Engine::CreatePipeline()
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
-void Engine::CreateDynamicBuffer()
-{
-	stringstream strs;
-	strs << "\n\nTotal Elapsed Time (Seconds): ";
-	strs << GameTime::TotalElapsedSeconds();
-	strs << "\nTotal Elapsed Time (Milli): ";
-	strs << GameTime::TotalElapsedMilli();
-	strs << "\nTotal Elapsed Time (Micro): ";
-	strs << GameTime::TotalElapsedMicro();
-	strs << "\nTotal Elapsed Time (CPU Cycle): ";
-	strs << GameTime::TotalElapsedCPUCycles();
-	strs << "\n\nActual Frame Index: ";
-	strs << GameTime::TotalElapsedFrames();
-	strs << "\n\nDelta Time: ";
-	strs << GameTime::DeltaTime();
-	strs << "\nLowest Delta Time: ";
-	strs << GameTime::DeltaLowest();
-	strs << "\nHighest Delta Time: ";
-	strs << GameTime::DeltaHighest();
-	strs << "\n\nNumber of 0 Frame Changes: ";
-	strs << GameTime::DeltaMajorLowFaults();
-	strs << "\nHighest Frame Change Occurance: ";
-	strs << GameTime::DeltaMajorHighFaults();
-	string temp_str = strs.str();
-	char const* pchar = temp_str.c_str();
-	int length = strlen(pchar);
-	ContentLoader::UpdateDynamicStringBuffer(pchar, length, 2);
-}
 
 void Engine::Update()
 {
-	CreateDynamicBuffer();
 	XGameInput::LoadController();
 
 	if (ContentLoader::m_index >= 0)
@@ -292,51 +232,48 @@ void Engine::Update()
 void Engine::Render()
 {
 	//Set the RenderTarget to the Swapped Buffer So We Can Draw To It!
+	context->ClearDepthStencilView(zbuffer.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	context->OMSetRenderTargets(1, rendertarget.GetAddressOf(), zbuffer.Get());
 	context->ClearRenderTargetView(rendertarget.Get(), BackgroundColor);
-	context->ClearDepthStencilView(zbuffer.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
+	context->OMSetDepthStencilState(depthoffstate.Get(), 0);
+
+	context->VSSetConstantBuffers(0, 1, d2d_const_buffer.GetAddressOf());
 	if (ContentLoader::m_index >= 0)
 	{
-		context->OMSetDepthStencilState(depthOffState.Get(), 0);
 
-		UINT stride = sizeof(VertexPositionColorTexture);
+		UINT stride = sizeof(Vertex32Byte);
 		UINT offset = 0;
-
-		context->IASetVertexBuffers(0, 1, ContentLoader::static_interfaces_buffer.GetAddressOf(), &stride, &offset);
-		context->VSSetConstantBuffers(0, 1, d2d_const_buffer.GetAddressOf());
 
 		float BlendFactor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		context->OMSetBlendState(blendstate.Get(), BlendFactor, 0xFFFFFFFF);
 
 		ContentWindow cw = ContentLoader::GetCurrentWindow();
 
+		context->IASetVertexBuffers(0, 1, ContentLoader::static_interfaces_buffer.GetAddressOf(), &stride, &offset);
+
 		if (cw.background_shader_id >= 0)
 		{
 			//CODE SECITON #1
-			//context->PSSetShaderResources(0, 1, ContentLoader::GetTextureResource(cw.background_shader_id).m_texture.GetAddressOf());
-			context->PSSetShaderResources(0, 1, ContentLoader::GetTextureComResource(cw.background_shader_id).GetAddressOf());
+			context->PSGetShaderResources(0, 1, ContentLoader::GetTextureAddress(cw.background_shader_id));
 			context->Draw(6, 0);
 		}
 		for (int i = 0; i < cw.state_changes; ++i)
 		{
 			//CODE SECITON #2
 			context->PSSetShaderResources(0, 1, 
-				ContentLoader::GetTextureComResource(cw.state_change_alias[i]).GetAddressOf()
-				//ContentLoader::GetTextureResource(cw.state_change_alias[i]).m_texture.GetAddressOf()
+				ContentLoader::GetTextureAddress(cw.state_change_alias[i])
 			);
 			context->Draw(cw.state_vertex_sizes[i], cw.state_vertex_offsets[i]);
 		}
 
 		//CODE SECITON #3
 		context->IASetVertexBuffers(0, 1, ContentLoader::dynamic_interfaces_buffer.GetAddressOf(), &stride, &offset);
-		context->PSSetShaderResources(0, 1, ContentLoader::GetTextureComResource(3).GetAddressOf());
-		//context->PSSetShaderResources(0, 1, ContentLoader::GetTextureResource(3).m_texture.GetAddressOf());
+		context->PSSetShaderResources(0, 1, ContentLoader::GetTextureAddress(3));
 		context->Draw(ContentLoader::dynamic_interface_buffer_size, 0);
 	}
 
-	context->OMSetDepthStencilState(depthOnState.Get(), 0);
-	swapchain->Present(1, 0);
+	swapchain->Present(VSYNC_ON, 0);
 }
 
 Engine::Engine() { }
@@ -345,11 +282,3 @@ Engine::~Engine() { }
 ComPtr<ID3D11DeviceContext1> Engine::context;
 ComPtr<ID3D11Device1> Engine::device;
 D3D11_VIEWPORT Engine::viewport;
-
-static const XMFLOAT4X4 IDENTITY_MATRIX
-{
-	1, 0, 0, 0,
-	0, 1, 0, 0,
-	0, 0, 1, 0,
-	0, 0, 0, 1
-};

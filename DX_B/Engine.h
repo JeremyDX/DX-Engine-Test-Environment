@@ -7,6 +7,7 @@
 #include "XModelMesh.h"
 #include "ContentLoader.h"
 #include "GameTime.h"
+#include "ScreenManager.h"
 
 using namespace Microsoft::WRL;
 using namespace Windows::UI::Core;
@@ -38,9 +39,6 @@ class Engine
 		ComPtr<ID3D11Buffer> vertexbuffer;
 
 		ComPtr<ID3D11DepthStencilView> zbuffer;
-
-		ComPtr<ID3D11DepthStencilState> depthOffState;
-		ComPtr<ID3D11DepthStencilState> depthOnState;
 
 		ComPtr<ID3D11RasterizerState> rasterizerstate;
 
@@ -77,4 +75,5 @@ class Engine
 		void Update();
 
 		void Render();
+		bool Present();
 };

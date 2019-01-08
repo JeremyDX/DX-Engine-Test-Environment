@@ -27,7 +27,7 @@ class CameraEngine
 
 		XMFLOAT3 position;  //Camera Current Position on the Map.
 
-		Vector3S rotation;  //Stores the rotation values prereduced in 32bit integer form.
+		Short3 rotation;  //Stores the rotation values prereduced in 32bit integer form.
 
 		XMFLOAT3 up;		//Up View Vector. This Vector tells us where to rotate the Forward/Right Vectors.
 
