@@ -267,7 +267,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ScreenManager.h" />
-    <ClInclude Include="VertexStructureTypes.h" />
+    <ClInclude Include="Constants.h" />
     <ClInclude Include="XGameInput.h" />
     <ClInclude Include="XModelMesh.h" />
     <ClInclude Include="TextureResource.h" />
@@ -292,7 +292,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="ScreenManager.cpp" />
-    <ClCompile Include="VertexStructureTypes.cpp" />
+    <ClCompile Include="Constants.cpp" />
     <ClCompile Include="XGameInput.cpp" />
     <ClCompile Include="XModelMesh.cpp" />
     <ClCompile Include="TextureResource.cpp" />

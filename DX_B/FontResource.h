@@ -1,11 +1,6 @@
 #pragma once
 
-#include <iostream>
-#include <sstream>
-#include <string.h>
-#include "VertexStructureTypes.h"
-
-using namespace std;
+#include "Constants.h"
 
 class FontResource
 {

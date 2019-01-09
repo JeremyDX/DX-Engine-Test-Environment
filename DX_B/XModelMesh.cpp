@@ -1,15 +1,18 @@
 #include "pch.h"
+
 #include "XModelMesh.h"
+#include "ScreenManager.h"
 
 /*
 * Loads a Full Size Texture.
 */
 __int32 XModelMesh::CreateTexturedSquare(Vertex32Byte *verts, int offset, Float3 Col, int texture_width, int texture_height, int drawX, int drawY)
 {
-	float offsetX = (2*drawX) / Engine::viewport.Width;
-	float offsetY = (2*drawY) / Engine::viewport.Height;
-	float width = (2*texture_width) / Engine::viewport.Width;
-	float height = (2*texture_height) / Engine::viewport.Height;
+	float offsetX = (2 * drawX) / ScreenManager::PREFERRED_CANVAS_WIDTH;
+	float offsetY = (2 * drawY) / ScreenManager::PREFERRED_CANVAS_HEIGHT;
+
+	float width = (2 * texture_width) / ScreenManager::PREFERRED_CANVAS_WIDTH;
+	float height = (2 * texture_height) / ScreenManager::PREFERRED_CANVAS_HEIGHT;
 
 	float top = 1.0F - offsetY;
 	float bottom = 1.0f - height - offsetY;

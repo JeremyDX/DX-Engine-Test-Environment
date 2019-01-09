@@ -1,9 +1,6 @@
 #pragma once
 
-#include "pch.h"
 #include "FileReaderWriter.h"
-
-using namespace DirectX;
 
 class TextureResource
 {

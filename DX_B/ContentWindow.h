@@ -16,9 +16,6 @@ class ContentWindow
 		signed __int16 state_vertex_sizes[4];
 		signed  __int8 state_changes;
 
-	public:	
-		static unsigned __int64 begin_frame_index;
-
 	public:
 		void (*update)();
 		void SetUpdateProc(int index);

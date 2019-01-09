@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "GameTime.h"
 
+#include <iostream>
+#include <windows.h>;
+
 uint32_t clock_cycles_per_second = 0;
 
 //Used For Calculating The Absolute Frame Index.

@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "ContentLoader.h"
 
+#include "Engine.h"
+#include "WICTextureLoader.h"
+
 ContentWindow* ContentLoader::interfaces;
 FontResource* ContentLoader::fonts;
 TextureResource* ContentLoader::texture_resources;

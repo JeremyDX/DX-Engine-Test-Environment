@@ -1,5 +1,9 @@
 #include "pch.h"
+
+#include <fstream>
+
 #include "FileReaderWriter.h"
+#include "WICTextureLoader.h"
 
 Platform::Array<byte>^ FileReaderWriter::ReadBytesFromFile(std::string File)
 {

@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "VertexStructureTypes.h"
+#include "Constants.h"
 
 using namespace DirectX;
 
@@ -19,7 +19,7 @@ class CameraEngine
 		bool ProcessCameraChanges();
 
 	public:
-		static uint16 DEGREE_LOOKUP_TABLE[91];
+		static const uint16 DEGREE_LOOKUP_TABLE[91];
 
 	public:
 		XMFLOAT4X4 view_matrix;

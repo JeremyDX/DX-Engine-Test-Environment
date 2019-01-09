@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "XGameInput.h"
+#include "GameTime.h"
 
 XINPUT_GAMEPAD gamepad;
 

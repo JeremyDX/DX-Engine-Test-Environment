@@ -1,8 +1,10 @@
 #include "pch.h"
 #include "CameraEngine.h"
-#include <WinBase.h>
+#include "XGameInput.h"
 
-uint16 CameraEngine::DEGREE_LOOKUP_TABLE[91] =
+#pragma comment (lib, "xinput.lib")
+
+const uint16 CameraEngine::DEGREE_LOOKUP_TABLE[91] =
 {
 	64000, 63990, 63961, 63912, 63844, 63756, //0 - 5
 	63649, 63523, 63377, 63212, 63028, 62824, //6 - 11

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Xinput.h>
-#pragma comment (lib, "xinput.lib")
 
 struct XBOX_CONTROLLER
 {

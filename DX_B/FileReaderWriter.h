@@ -1,9 +1,6 @@
 #pragma once
 
-#include <fstream>
 #include <string>
-
-#include "WICTextureLoader.h"
 
 class FileReaderWriter
 {

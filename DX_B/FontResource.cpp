@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "FontResource.h"
 
+#include "ScreenManager.h"
+
 void FontResource::SetDrawPosition(int16_t x, int16_t y)
 {
 

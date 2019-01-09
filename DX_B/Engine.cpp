@@ -190,7 +190,7 @@ void Engine::CreatePipeline()
 	context->PSSetShader(pixelshader.Get(), nullptr, 0);
 
 	// create and set the input layout
-	device->CreateInputLayout(VertexStructureTypes::Layout_Byte32, 3, VSFile->Data, VSFile->Length, &inputlayout);
+	device->CreateInputLayout(Constants::Layout_Byte32, 3, VSFile->Data, VSFile->Length, &inputlayout);
 	context->IASetInputLayout(inputlayout.Get());
 
 	// define and set the constant buffer

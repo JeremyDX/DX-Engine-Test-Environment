@@ -1,10 +1,6 @@
 #pragma once
 
-#include "VertexStructureTypes.h"
-#include "TextureResource.h"
-#include "FontResource.h"
-
-using namespace Microsoft::WRL;
+#include "Constants.h"
 
 class XModelMesh
 {
@@ -19,6 +15,6 @@ class XModelMesh
 		static __int32 CreateTexturedSquare(Vertex32Byte * verts, int offset, Float3 Col, int texture_width, int texture_height, int drawX, int drawY);
 		void CreateCubeObject(ID3D11Device *device, float xPos, float yPos, float zPos);
 
-		ComPtr<ID3D11Buffer> vertexbuffer;
-		ComPtr<ID3D11Buffer> indexbuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> vertexbuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> indexbuffer;
 };

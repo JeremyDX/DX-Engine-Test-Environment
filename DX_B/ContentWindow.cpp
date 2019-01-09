@@ -1,7 +1,10 @@
 #include "pch.h"
+
 #include "ContentWindow.h"
 
-unsigned __int64 ContentWindow::begin_frame_index = 0;
+#include "XGameInput.h"
+#include "GameTime.h"
+#include "ContentLoader.h"
 
 ContentWindow::ContentWindow() { }
 

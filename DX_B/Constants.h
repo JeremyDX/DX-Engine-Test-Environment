@@ -81,11 +81,11 @@ struct Vertex44Byte
 	float _U, _V;
 };
 
-class VertexStructureTypes
+class Constants
 {
 	public:
 
-		static const D3D11_INPUT_ELEMENT_DESC VertexStructureTypes::Layout_Byte20[];
-		static const D3D11_INPUT_ELEMENT_DESC VertexStructureTypes::Layout_Byte32[];
-		static const D3D11_INPUT_ELEMENT_DESC VertexStructureTypes::Layout_Byte44[];
+		static const D3D11_INPUT_ELEMENT_DESC Constants::Layout_Byte20[];
+		static const D3D11_INPUT_ELEMENT_DESC Constants::Layout_Byte32[];
+		static const D3D11_INPUT_ELEMENT_DESC Constants::Layout_Byte44[];
 };

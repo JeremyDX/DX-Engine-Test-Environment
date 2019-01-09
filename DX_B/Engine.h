@@ -2,7 +2,6 @@
 
 #include "FileReaderWriter.h"
 #include "CameraEngine.h"
-#include "VertexStructureTypes.h"
 #include "XGameInput.h"
 #include "XModelMesh.h"
 #include "ContentLoader.h"
