@@ -2,18 +2,35 @@
 #include "ContentLoader.h"
 
 #include "Engine.h"
-#include "WICTextureLoader.h"
+#include "GameTime.h"
+#include "XModelMesh.h"
+#include "XWicLoader.h"
 
-ContentWindow* ContentLoader::interfaces;
-FontResource* ContentLoader::fonts;
-TextureResource* ContentLoader::texture_resources;
+using namespace DirectX;
 
-int ContentLoader::m_index, ContentLoader::s_index, ContentLoader::dynamic_interface_buffer_size;
+ContentWindow* ContentLoader::interfaces = NULL;
+FontResource* ContentLoader::fonts = NULL;
+ID3D11ShaderResourceView** ContentLoader::texture_resources = NULL;
+
+int ContentLoader::m_index = -1, 
+	ContentLoader::s_index = -1, 
+	ContentLoader::dynamic_interface_buffer_size = -1;
+
+bool ContentLoader::ALLOW_3D_PROCESSING = false;
+
+Vertex32Byte vertsToDraw[4096];
 
 void ContentLoader::PresentWindow(int index)
 {
-	GameTime::ResetWindowTimeStamp();
 	m_index = index;
+
+	GameTime::ResetWindowTimeStamp();
+}
+
+void ContentLoader::ClearWindow()
+{
+	m_index = -1;
+	GameTime::ResetWindowTimeStamp();
 }
 
 void ContentLoader::PresentOverlay(int index)
@@ -26,42 +43,135 @@ void ContentLoader::LoadContentStage(int stage)
 	LoadHeaderInformation(stage);
 }
 
-ContentWindow ContentLoader::GetCurrentWindow()
+ContentWindow& ContentLoader::GetCurrentWindow()
 {
 	return interfaces[m_index];
 }
 
-TextureResource& ContentLoader::GetTextureResource(int index)
-{
-	return texture_resources[index];
-}
 
 ID3D11ShaderResourceView** ContentLoader::GetTextureAddress(int index)
 {
-	return texture_resources[index].m_texture.GetAddressOf();
-}
-
-ComPtr<ID3D11ShaderResourceView> ContentLoader::GetTextureComResource(int index)
-{
-	return texture_resources[index].m_texture;
+	return &texture_resources[index];
 }
 
 /* 
  * Hardcoded Interfaces For Now :(
  * Don't worry we'll have a content builder soon enough.
  */
+
+bool test1 = true;
+bool test2 = true;
+
 void ContentLoader::LoadHeaderInformation(int stage)
 {
+	if (stage == 0)
+		LoadMenuStage();
+	else if (stage == 1)
+		LoadWorldStage();
+}
+
+void ContentLoader::LoadWorldStage()
+{
+	if (max_interfaces != 0)
+		delete[] interfaces;
+
+	max_interfaces = 0;
+
+	if (max_fonts != 0)
+		delete[] fonts;
+
+	max_fonts = 0;
+
+	if (max_textures != 0)
+	{
+		for (int i = 0; i < max_textures; ++i)
+			texture_resources[i]->Release();
+	}
+
+	texture_resources = new ID3D11ShaderResourceView*[2];
+	max_textures = 2;
+
+	Microsoft::WRL::ComPtr<ID3D11Resource> resource;
+
+	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/SMILEY512.png", resource.GetAddressOf(), &texture_resources[0], 0);
+	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/RGB_TransparencyMap.png", resource.GetAddressOf(), &texture_resources[1], 0);
+	
+	Engine::context->GenerateMips(texture_resources[0]);
+	Engine::context->GenerateMips(texture_resources[1]);
+
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> tex;
+	resource.As(&tex);
+
+	D3D11_TEXTURE2D_DESC desc;
+	tex->GetDesc(&desc);
+
+	Float3 Color = { 1.0f, 1.0f, 1.0f };
+
+	float
+		xPos = 0.0f,
+		yPos = 0.0f,
+		zPos = 0.0f,
+		SIZE = 32.0f * 8,
+		SIZE_2 = 16.0f * 8;
+	
+	vertsToDraw[0] = { xPos + -SIZE, yPos , zPos + -SIZE, Color._1, Color._2, Color._3,	0.0f, 0.0f };
+	vertsToDraw[1] = { xPos + -SIZE, yPos , zPos +  SIZE, Color._1, Color._2, Color._3,   0.0f, SIZE_2 };
+	vertsToDraw[2] = { xPos +  SIZE, yPos , zPos + -SIZE, Color._1, Color._2, Color._3,   SIZE_2, 0.0f };
+
+	vertsToDraw[3] = { xPos +  SIZE, yPos , zPos + -SIZE, Color._1, Color._2, Color._3,   SIZE_2, 0.0f };
+	vertsToDraw[4] = { xPos + -SIZE, yPos , zPos +  SIZE, Color._1, Color._2, Color._3,   0.0f,SIZE_2 };
+	vertsToDraw[5] = { xPos +  SIZE, yPos , zPos +  SIZE, Color._1, Color._2, Color._3,	SIZE_2, SIZE_2 };
+
+	int offset = 6;
+
+	if (test2)
+	{
+		test2 = false;
+		D3D11_BUFFER_DESC bd = { 0 };
+		bd.ByteWidth = sizeof(Vertex32Byte) * 4096;
+		bd.Usage = D3D11_USAGE_DYNAMIC;
+		bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		bd.MiscFlags = 0;
+		bd.StructureByteStride = 0;
+		D3D11_SUBRESOURCE_DATA srd = { vertsToDraw, 0, 0 };
+		Engine::device->CreateBuffer(&bd, &srd, static_mesh_buffer.GetAddressOf());
+	}
+	else
+	{
+		D3D11_MAPPED_SUBRESOURCE resource;
+		ZeroMemory(&resource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+		Engine::context->Map(static_mesh_buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &resource);
+		memcpy(resource.pData, &vertsToDraw, sizeof(Vertex32Byte) * offset);
+		Engine::context->Unmap(static_mesh_buffer.Get(), 0);
+	}
+
+	ALLOW_3D_PROCESSING = true;
+
+}
+
+void ContentLoader::LoadMenuStage()
+{
+	if (max_interfaces != 0)
+		delete[] interfaces;
+
+	if (max_fonts != 0)
+		delete[] fonts;
+
+	if (max_textures != 0)
+	{
+		for (int i = 0; i < max_textures; ++i)
+			texture_resources[i]->Release();
+	}
+
 	interfaces = new ContentWindow[3];
 	max_interfaces = 3;
 
 	fonts = new FontResource[4];
 	max_fonts = 4;
 
-	texture_resources = new TextureResource[7];
+	texture_resources = new ID3D11ShaderResourceView*[7];
 	max_textures = 7;
-
-	Vertex32Byte vertsToDraw[4096];
 
 	vertsToDraw[0] = { -1.0F,  1.0F,  0.0f,		1.0F, 1.0F, 1.0F,	0.0F, 0.0F};
 	vertsToDraw[1] = {  1.0F, -1.0F,  0.0f,		1.0F, 1.0F, 1.0F,	1.0F, 1.0F};
@@ -74,13 +184,21 @@ void ContentLoader::LoadHeaderInformation(int stage)
 	interfaces[0].background_color = 0;
 	interfaces[0].background_shader_id = -1;
 	
-	CreateWICTextureFromFile(Engine::device.Get(), nullptr, L"Assets/RGB_TransparencyMap.png", nullptr, texture_resources[0].m_texture.GetAddressOf(), 0);
-	CreateWICTextureFromFile(Engine::device.Get(), nullptr, L"Assets/0_FONT.png", nullptr, texture_resources[1].m_texture.GetAddressOf(), 0);
-	CreateWICTextureFromFile(Engine::device.Get(), nullptr, L"Assets/1_FONT.png", nullptr, texture_resources[2].m_texture.GetAddressOf(), 0);
-	CreateWICTextureFromFile(Engine::device.Get(), nullptr, L"Assets/2_FONT.png", nullptr, texture_resources[3].m_texture.GetAddressOf(), 0);
-	CreateWICTextureFromFile(Engine::device.Get(), nullptr, L"Assets/3_FONT.png", nullptr, texture_resources[4].m_texture.GetAddressOf(), 0);
-	CreateWICTextureFromFile(Engine::device.Get(), nullptr, L"Assets/Image_0.png", nullptr, texture_resources[5].m_texture.GetAddressOf(), 0);
-	CreateWICTextureFromFile(Engine::device.Get(), nullptr, L"Assets/Image_1.png", nullptr, texture_resources[6].m_texture.GetAddressOf(), 0);
+	static const wchar_t* PATHS[7] = 
+	{
+			L"Assets/RGB_TransparencyMap.png",
+			L"Assets/0_FONT.png",
+			L"Assets/1_FONT.png",
+			L"Assets/2_FONT.png",
+			L"Assets/3_FONT.png",
+			L"Assets/Image_0.png",
+			L"Assets/Image_1.png"
+	};
+
+	for (int n = 0; n < 7; ++n)
+	{
+		CreateWICTextureFromFile(Engine::device.Get(), nullptr, PATHS[n], nullptr, &texture_resources[n], 0);
+	}
 
 	fonts[0].CreateGlyphMapping(0);
 	fonts[1].CreateGlyphMapping(1);
@@ -152,37 +270,72 @@ void ContentLoader::LoadHeaderInformation(int stage)
 	interfaces[2].state_change_alias[0] = 2; //Title Text.
 	interfaces[2].state_change_alias[1] = 6; //Bottom Images.
 	
-	interfaces[2].SetUpdateProc(0);
+	interfaces[2].SetUpdateProc(2); //Contains Menu's.
+	interfaces[2].SetChildUpdateProc(1, 3, 0); //Left/Right Menu Size 3. No Disabled Bits.
 
-	D3D11_BUFFER_DESC bd = { 0 };
-	bd.ByteWidth = sizeof(Vertex32Byte) * offset;
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-
-	float *floatVersion = new float[offset * 8];
-	int n = -1;
-	for (int i = 0; i < offset; ++i)
+	if (test1)
 	{
-		floatVersion[++n] = vertsToDraw[i]._X;
-		floatVersion[++n] = vertsToDraw[i]._Y;
-		floatVersion[++n] = vertsToDraw[i]._Z;
-
-		floatVersion[++n] = vertsToDraw[i]._1;	
-		floatVersion[++n] = vertsToDraw[i]._2;
-		floatVersion[++n] = vertsToDraw[i]._3;
-		
-		floatVersion[++n] = vertsToDraw[i]._U;
-		floatVersion[++n] = vertsToDraw[i]._V;
+		test1 = false;
+		D3D11_BUFFER_DESC bd = { 0 };
+		bd.ByteWidth = sizeof(Vertex32Byte) * 4096;
+		bd.Usage = D3D11_USAGE_DYNAMIC;
+		bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		bd.MiscFlags = 0;
+		bd.StructureByteStride = 0;
+		D3D11_SUBRESOURCE_DATA srd = { vertsToDraw, 0, 0 };
+		Engine::device->CreateBuffer(&bd, &srd, static_interfaces_buffer.GetAddressOf());
 	}
-
-	D3D11_SUBRESOURCE_DATA srd = { floatVersion, 0, 0 };
-	Engine::device->CreateBuffer(&bd, &srd, static_interfaces_buffer.GetAddressOf());
-
-	
+	else 
+	{
+		D3D11_MAPPED_SUBRESOURCE resource;
+		ZeroMemory(&resource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+		Engine::context->Map(static_interfaces_buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &resource);
+		memcpy(resource.pData, &vertsToDraw, sizeof(Vertex32Byte) * offset);
+		Engine::context->Unmap(static_interfaces_buffer.Get(), 0);
+	}
 }
 
-void ContentLoader::CheckContentHeaderSize(int size, int index)
+void ContentLoader::SwapQuadsPosition(int offset_a, int offset_b)
 {
+	Float3 W = { 1.0f, 1.0f, 1.0f };
+	Float3 G = { 0.0f, 1.0f, 0.0f };
 
+	for (int a = 0; a < 3; ++a)
+	{
+		vertsToDraw[offset_a]._1 = W._1;
+		vertsToDraw[offset_a]._2 = W._2;
+		vertsToDraw[offset_a]._3 = W._3;
+		++offset_a;
+		vertsToDraw[offset_a]._1 = W._1;
+		vertsToDraw[offset_a]._2 = W._2;
+		vertsToDraw[offset_a]._3 = W._3;
+		++offset_a;
+	}
+
+	for (int a = 0; a < 3; ++a)
+	{
+		vertsToDraw[offset_b]._1 = G._1;
+		vertsToDraw[offset_b]._2 = G._2;
+		vertsToDraw[offset_b]._3 = G._3;
+		++offset_b;
+		vertsToDraw[offset_b]._1 = G._1;
+		vertsToDraw[offset_b]._2 = G._2;
+		vertsToDraw[offset_b]._3 = G._3;
+		++offset_b;
+	}
+}
+
+void ContentLoader::SendUpdatedBufferToGpu()
+{
+	D3D11_MAPPED_SUBRESOURCE resource;
+	ZeroMemory(&resource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
+	Engine::context->Map(static_interfaces_buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &resource);
+
+	memcpy(resource.pData, vertsToDraw, 4096 * 32);
+
+	Engine::context->Unmap(static_interfaces_buffer.Get(), 0);
 }
 
 bool created = false;
@@ -228,13 +381,6 @@ void ContentLoader::UpdateDynamicStringBuffer(const char* text, int length, int 
 	}
 }
 
-unsigned __int8 
-	ContentLoader::loaded_interfaces = 0, 
-	ContentLoader::loaded_fonts = 0, 
-	ContentLoader::loaded_textures = 0,
-	ContentLoader::loaded_vshaders = 0,
-	ContentLoader::loaded_pshaders = 0;
-
 unsigned __int16
 	ContentLoader::max_interfaces = 0, 
 	ContentLoader::max_fonts = 0, 
@@ -242,7 +388,7 @@ unsigned __int16
 	ContentLoader::max_vshaders = 0,
 	ContentLoader::max_pshaders = 0;
 
-ComPtr<ID3D11Buffer>
+Microsoft::WRL::ComPtr<ID3D11Buffer>
 	ContentLoader::static_interfaces_buffer,
 	ContentLoader::static_mesh_buffer, 
 	ContentLoader::dynamic_interfaces_buffer,  

@@ -10,8 +10,8 @@ struct XBOX_CONTROLLER
 
 			D_PAD_UP = 0x1,
 			D_PAD_DOWN = 0x2,
-			D_PAD_RIGHT = 0x4,
-			D_PAD_LEFT = 0x8,
+			D_PAD_LEFT = 0x4,
+			D_PAD_RIGHT = 0x8,
 			MENU_BUTTON = 0x10,
 			VIEW_BUTTON = 0x20,
 			LEFT_STICK_CLICK = 0x40,
@@ -40,12 +40,16 @@ public:
 	static XINPUT_GAMEPAD& GamePad();
 	static uint16 GetButtonBitSet();
 
-	static bool ExactButtonsPressed(int value);
-	static bool ExactButtonsReleased(int value);
-	static bool ExactButtonsHolding(int value);
+	static bool AllOfTheseButtonsArePressed(int value);
+	static bool AllOfTheseButtonsAreReleased(int value);
+	static bool AllOfTheseButtonsAreHolding(int value);
 
-	static uint16_t AnyButtonsPressed(int value = XBOX_CONTROLLER::ALL_BUTTONS);
-	static uint16_t AnyButtonsReleased(int value = XBOX_CONTROLLER::ALL_BUTTONS);
-	static uint16_t AnyButtonsHolding(int value = XBOX_CONTROLLER::ALL_BUTTONS);
+	static uint16_t AnyOfTheseButtonsArePressed(int value = XBOX_CONTROLLER::ALL_BUTTONS);
+	static uint16_t AnyOfTheseButtonsAreReleased(int value = XBOX_CONTROLLER::ALL_BUTTONS);
+	static uint16_t AnyOfTheseButtonsAreHolding(int value = XBOX_CONTROLLER::ALL_BUTTONS);
+
+	static bool AnyButtonPressed();
+	static bool AnyButtonReleased();
+	static bool AnyButtonHeld();
 };
 

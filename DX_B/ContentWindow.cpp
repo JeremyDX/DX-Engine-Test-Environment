@@ -17,9 +17,65 @@ ContentWindow::~ContentWindow() { }
 */
 void UpdateToWindow(void)
 {
-	if (XGameInput::AnyButtonsPressed() || GameTime::ElapsedWindowFrameTicks() >= 600)
+	if (XGameInput::AnyButtonPressed() || GameTime::ElapsedWindowFrameTicks() >= 600)
 	{
 		ContentLoader::PresentWindow(ContentLoader::m_index + 1);
+	}
+}
+
+void ProcessMenuButtons(void)
+{
+	ContentWindow& cw = ContentLoader::GetCurrentWindow();
+	cw.children();
+	if (XGameInput::AnyOfTheseButtonsArePressed(
+		XBOX_CONTROLLER::A_BUTTON | XBOX_CONTROLLER::X_BUTTON | XBOX_CONTROLLER::MENU_BUTTON | XBOX_CONTROLLER::VIEW_BUTTON
+	))
+	{
+		switch (cw.menu_index)
+		{
+			case 1:
+				ContentLoader::ClearWindow();
+				ContentLoader::LoadContentStage(1);
+				break;
+			case 2:
+				ContentLoader::LoadContentStage(0);
+				ContentLoader::PresentWindow(0);
+				break;
+		}
+	}
+}
+
+void MenuUpdateDownUp(void)
+{
+	ContentWindow cw = ContentLoader::GetCurrentWindow();
+}
+
+void MenuUpdateLeftRight(void)
+{
+	ContentWindow & cw = ContentLoader::GetCurrentWindow();
+	if (XGameInput::AllOfTheseButtonsArePressed
+	(
+		XBOX_CONTROLLER::D_PAD_LEFT
+	))
+	{
+		int oldPosition = cw.state_vertex_offsets[1] + cw.menu_index * 6;
+		--cw.menu_index;
+		if (cw.menu_index < 0)
+			cw.menu_index = cw.menu_size - 1;
+		int newPosition = cw.state_vertex_offsets[1] + cw.menu_index * 6;
+		ContentLoader::SwapQuadsPosition(oldPosition, newPosition);
+	}
+	else if (XGameInput::AllOfTheseButtonsArePressed
+	(
+		XBOX_CONTROLLER::D_PAD_RIGHT
+	))
+	{
+		int oldPosition = cw.state_vertex_offsets[1] + cw.menu_index * 6;
+		++cw.menu_index;
+		if (cw.menu_index >= cw.menu_size)
+			cw.menu_index = 0;
+		int newPosition = cw.state_vertex_offsets[1] + cw.menu_index * 6;
+		ContentLoader::SwapQuadsPosition(oldPosition, newPosition);
 	}
 }
 
@@ -27,11 +83,28 @@ void DoNothing(void) { }
 
 void ContentWindow::SetUpdateProc(int index)
 {
-	if (index == 1)
+	if (index == 2)
+	{
+		update = ProcessMenuButtons;
+	}
+	else if (index == 1)
 	{
 		update = UpdateToWindow;
 	} else {
 		update = DoNothing;
 	}
+}
+
+void ContentWindow::SetChildUpdateProc(int index, int size, int disabled_bits)
+{
+	this->disabled_menu_bits = disabled_bits;
+	this->menu_size = size;
+	this->menu_index = 0;
+	if (index == 0)
+		children = MenuUpdateDownUp;
+	else if (index == 1)
+		children = MenuUpdateLeftRight;
+	else
+		children = DoNothing;
 }
 

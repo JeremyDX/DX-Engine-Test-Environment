@@ -254,6 +254,7 @@
     <Image Include="Assets\Image_1.png" />
     <Image Include="Assets\Image_2.PNG" />
     <Image Include="Assets\RGB_TransparencyMap.png" />
+    <Image Include="Assets\SMILEY512.png" />
     <Image Include="Assets\Wood.png" />
   </ItemGroup>
   <ItemGroup>
@@ -268,6 +269,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="ScreenManager.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="XWicLoader.h" />
     <ClInclude Include="XGameInput.h" />
     <ClInclude Include="XModelMesh.h" />
     <ClInclude Include="TextureResource.h" />
@@ -296,6 +298,7 @@
     <ClCompile Include="XGameInput.cpp" />
     <ClCompile Include="XModelMesh.cpp" />
     <ClCompile Include="TextureResource.cpp" />
+    <ClCompile Include="XWicLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
@@ -308,24 +311,6 @@
     <ResourceCompile Include="DX_B.rc" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="TexturePositionColor.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
-    </FxCompile>
     <FxCompile Include="TexturePosition.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
     </FxCompile>

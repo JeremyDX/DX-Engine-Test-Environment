@@ -8,35 +8,33 @@ class ContentLoader
 {
 	public:
 		static void PresentWindow(int index);
+		static void ClearWindow();
 		static void PresentOverlay(int index);
 		static void LoadContentStage(int index);
-		static ContentWindow GetCurrentWindow();
-		static TextureResource& GetTextureResource(int index);
+		static ContentWindow& GetCurrentWindow();
+
 		static ID3D11ShaderResourceView** GetTextureAddress(int index);
-		static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetTextureComResource(int index);
+
 		static void UpdateDynamicStringBuffer(const char* text, int length, int font_id);
+		static void SwapQuadsPosition(int offset_a, int offset_b);
+
+		static void SendUpdatedBufferToGpu();
 
 	public:
 		static __int32 m_index, s_index, dynamic_interface_buffer_size;
+		static bool ALLOW_3D_PROCESSING;
 
 	private:
 		static void LoadHeaderInformation(int stage);
-		static void CheckContentHeaderSize(int size, int index);
+
+		static void LoadMenuStage();
+		static void LoadWorldStage();
 
 		static ContentWindow* interfaces;
 		static FontResource* fonts;
-
-	public:
-		static TextureResource *texture_resources;
+		static ID3D11ShaderResourceView** texture_resources;
 
 	private:
-
-		static unsigned __int8 
-			loaded_interfaces, 
-			loaded_fonts, 
-			loaded_textures, 
-			loaded_pshaders,
-			loaded_vshaders;
 
 		static unsigned __int16
 			max_interfaces, 

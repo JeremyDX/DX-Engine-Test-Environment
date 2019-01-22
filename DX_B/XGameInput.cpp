@@ -3,31 +3,25 @@
 #include "XGameInput.h"
 #include "GameTime.h"
 
-XINPUT_GAMEPAD gamepad;
+XINPUT_STATE gamepad_state;
 
 uint16_t BUTTONS_HOLD = 0;
 uint16_t BUTTONS_PRESSED = 0;
 uint16_t BUTTONS_RELEASED = 0;
 
 uint16_t HOLD_TRACKING = 0;
-uint64_t TRACKING_BEGIN = 0;
 
-uint32_t CURRENT = 0;
+uint64_t TRACKING_BEGIN = 0;
 
 bool XGameInput::LoadController()
 {
-	uint64_t TIME_STAMP = GameTime::AbsoluteFrameTicks();
+	uint16_t LAST = gamepad_state.Gamepad.wButtons;
+	
+	ZeroMemory(&gamepad_state, sizeof(XINPUT_STATE));
 
-	XINPUT_STATE xstate;
-	ZeroMemory(&xstate, sizeof(XINPUT_STATE));
-
-	if (XInputGetState(0, &xstate) == 0L)
+	if (XInputGetState(0, &gamepad_state) == 0L)
 	{
-		gamepad = xstate.Gamepad;
-
-		uint64_t LAST = CURRENT;
-
-		CURRENT = gamepad.wButtons;
+		uint16_t CURRENT = gamepad_state.Gamepad.wButtons;
 
 		BUTTONS_HOLD = LAST & CURRENT;
 		BUTTONS_RELEASED = LAST ^ BUTTONS_HOLD;
@@ -55,60 +49,75 @@ void XGameInput::ResetHoldTracking()
 
 uint16 XGameInput::GetLeftStickX()
 {
-	return gamepad.sThumbLX;
+	return gamepad_state.Gamepad.sThumbLX;
 }
 
 uint16 XGameInput::GetLeftStickY()
 {
-	return gamepad.sThumbLY;
+	return gamepad_state.Gamepad.sThumbLY;
 }
 
 uint16 XGameInput::GetRightStickX()
 {
-	return gamepad.sThumbRX;
+	return gamepad_state.Gamepad.sThumbRX;
 }
 
 uint16 XGameInput::GetRightStickY()
 {
-	return gamepad.sThumbRY;
+	return gamepad_state.Gamepad.sThumbRY;
 }
 
 XINPUT_GAMEPAD& XGameInput::GamePad()
 {
-	return gamepad;
+	return gamepad_state.Gamepad;
 }
 
 uint16 XGameInput::GetButtonBitSet()
 {
-	return gamepad.wButtons;
+	return gamepad_state.Gamepad.wButtons;
 }
 
-bool XGameInput::ExactButtonsPressed(int value)
+bool XGameInput::AllOfTheseButtonsArePressed(int value)
 {
 	return (BUTTONS_PRESSED & value) == value;
 }
 
-bool XGameInput::ExactButtonsReleased(int value)
+bool XGameInput::AllOfTheseButtonsAreReleased(int value)
 {
 	return (BUTTONS_RELEASED & value) == value;
 }
 
-bool XGameInput::ExactButtonsHolding(int value)
+bool XGameInput::AllOfTheseButtonsAreHolding(int value)
 {
 	return (BUTTONS_HOLD & value) == value;
 }
 
-uint16_t XGameInput::AnyButtonsPressed(int value)
+uint16_t XGameInput::AnyOfTheseButtonsArePressed(int value)
 {
 	return BUTTONS_PRESSED & value;
 }
 
-uint16_t XGameInput::AnyButtonsReleased(int value)
+uint16_t XGameInput::AnyOfTheseButtonsAreReleased(int value)
 {
 	return BUTTONS_RELEASED & value;
 }
 
-uint16_t XGameInput::AnyButtonsHolding(int value)
+uint16_t XGameInput::AnyOfTheseButtonsAreHolding(int value)
 {
 	return BUTTONS_HOLD & value;
+}
+
+bool XGameInput::AnyButtonPressed()
+{
+	return BUTTONS_PRESSED != 0;
+}
+
+bool XGameInput::AnyButtonReleased()
+{
+	return BUTTONS_PRESSED != 0;
+}
+
+bool XGameInput::AnyButtonHeld()
+{
+	return BUTTONS_HOLD != 0;
 }

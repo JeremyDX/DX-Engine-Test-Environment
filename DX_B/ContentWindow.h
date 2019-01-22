@@ -18,7 +18,13 @@ class ContentWindow
 
 	public:
 		void (*update)();
+		void (*children)();
+		void UpdateLeftRight();
 		void SetUpdateProc(int index);
-};
+		void SetChildUpdateProc(int index, int size, int disabled_bits);
 
-void UpdateToWindow(void);
+	public:
+		int menu_index;
+		int menu_size;
+		int disabled_menu_bits;
+};

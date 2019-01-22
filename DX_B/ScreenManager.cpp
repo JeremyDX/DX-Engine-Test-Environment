@@ -1,15 +1,16 @@
 #include "pch.h"
 #include "ScreenManager.h"
 
-unsigned __int16 ScreenManager::RESOLUTION_WIDTH;
-unsigned __int16 ScreenManager::RESOLUTION_HEIGHT;
-           float ScreenManager::ASPECT_RATIO;
+uint16_t ScreenManager::RESOLUTION_WIDTH;
+uint16_t ScreenManager::RESOLUTION_HEIGHT;
+           
+uint16_t ScreenManager::HORIZONTAL_OFFSET = 0;
+uint16_t ScreenManager::VERTICAL_OFFSET = 0;
 
-unsigned __int16 ScreenManager::HORIZONTAL_OFFSET = 0;
-unsigned __int16 ScreenManager::VERTICAL_OFFSET = 0;
+uint16_t ScreenManager::PREFERRED_CANVAS_WIDTH = 0;
+uint16_t ScreenManager::PREFERRED_CANVAS_HEIGHT = 0;
 
-unsigned __int16 ScreenManager::PREFERRED_CANVAS_WIDTH = 0;
-unsigned __int16 ScreenManager::PREFERRED_CANVAS_HEIGHT = 0;
+   float ScreenManager::ASPECT_RATIO;
 
 void ScreenManager::UpdateScreenResolution(__int16 resolution_height, __int16 resolution_width)
 {

@@ -24,6 +24,7 @@
     <ClCompile Include="GameTime.cpp" />
     <ClCompile Include="ScreenManager.cpp" />
     <ClCompile Include="Constants.cpp" />
+    <ClCompile Include="XWicLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -40,6 +41,7 @@
     <ClInclude Include="GameTime.h" />
     <ClInclude Include="ScreenManager.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="XWicLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\0_FONT.PNG">
@@ -75,6 +77,9 @@
     <Image Include="Assets\Wood.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\SMILEY512.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />
@@ -89,6 +94,5 @@
   <ItemGroup>
     <FxCompile Include="VertexShader.hlsl" />
     <FxCompile Include="TexturePosition.hlsl" />
-    <FxCompile Include="TexturePositionColor.hlsl" />
   </ItemGroup>
 </Project>

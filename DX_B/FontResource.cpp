@@ -8,12 +8,15 @@ void FontResource::SetDrawPosition(int16_t x, int16_t y)
 
 }
 
-uint16_t FontResource::AddDynamicallyToBuffer(int64_t num, uint16_t offset)
+uint16_t FontResource::AddDynamicallyToBuffer(Vertex32Byte * buffer, int64_t num, uint16_t offset)
 {
+	/*
 	uint64_t value = num;
-	int neg = num < 0;
-	if (neg)
+	if (num < 0)
+	{
 		value = -num;
+		buffer[offset].
+	}
 	int len = 0;
 	if (value >= 1000000000) //10 Digit.
 	{
@@ -145,7 +148,7 @@ uint16_t FontResource::AddDynamicallyToBuffer(int64_t num, uint16_t offset)
 		value -= reduction * c_value;
 		reduction *= 0.1;
 	}
-
+	*/
 	return offset;
 }
 

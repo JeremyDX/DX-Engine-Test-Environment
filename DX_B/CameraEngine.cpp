@@ -1,202 +1,181 @@
 #include "pch.h"
 #include "CameraEngine.h"
 #include "XGameInput.h"
+#include "GameTime.h"
+#include "ScreenManager.h"
 
-#pragma comment (lib, "xinput.lib")
+using namespace DirectX;
 
-const uint16 CameraEngine::DEGREE_LOOKUP_TABLE[91] =
+const static float HALF_DEGREE_AS_RADIAN = 0.0087266462599;
+
+void CreateProjectionMatrix(XMFLOAT4X4 & matrix, float angle, float znear, float zfar)
 {
-	64000, 63990, 63961, 63912, 63844, 63756, //0 - 5
-	63649, 63523, 63377, 63212, 63028, 62824, //6 - 11
-	62601, 62360, 62099, 61819, 61521, 61204, //12 - 17
-	60868, 60513, 60140, 59749, 59340, 58912, //18 - 23
-	58467, 58004, 57523, 57024, 56509, 55976, //24 - 29
-	55426, 54859, 54275, 53675, 53058, 52426, //30 - 35
-	51777, 51113, 50433, 49737, 49027, 48301, //36 - 41
-	47561, 46807, 46038, 45255, 44458, 43648, //42 - 47
-	42824, 41988, 41138, 40277, 39402, 38516, //48 - 53
-	37618, 36709, 35788, 34857, 33915, 32962, //54 - 59
-	32000, 31028, 30046, 29055, 28056, 27048, //60 - 65
-	26031, 25007, 23975, 22936, 21889, 20836, //66 - 71
-	19777, 18712, 17641, 16564, 15483, 14397, //72 - 77
-	13306, 12212, 11113, 10012, 8907,  7800,  //78 - 83
-	6690,  5578,  4464,  3350,  2234,  1117,  //84 - 89
-	0										  //90
-};
+	ZeroMemory(&matrix, sizeof(XMFLOAT4X4));
 
-XMFLOAT2 CameraEngine::GetDegreeVector(int degree)
-{
-	//350.
-	int quadrant = (int)(degree / 90) % 4; //3
-	int degrees = degree - quadrant * 90; //80 
-	float u = (float)(DEGREE_LOOKUP_TABLE[degrees] * 0.000015625);      //Value @ 80.
-	float v = (float)(DEGREE_LOOKUP_TABLE[90 - degrees] * 0.000015625); //Value @ 10.
-	if (quadrant == 0)
-		return XMFLOAT2(u, v);
-	else {
-		if (quadrant & 1)
-		{
-			float tmp = u;
-			if (quadrant == 1)
-			{
-				u = -v;
-				v = tmp;
-			}
-			else {
-				u = v;
-				v = -tmp;
-			}
-			return XMFLOAT2(u, v);
-		}
-		else {
-			return XMFLOAT2(-u, -v);
-		}
-	}
+	float aspect = ScreenManager::ASPECT_RATIO;
+
+	matrix._22 = 1.0f / tan(HALF_DEGREE_AS_RADIAN * angle);
+	matrix._11 = matrix._22 / aspect;
+	matrix._33 = zfar / (zfar - znear);
+	matrix._34 = 1.0F;
+	matrix._43 = -znear * zfar / (zfar - znear);
 }
 
+XMFLOAT4X4 CameraEngine::final_result;
 
-//Returns a more concise cosine variable position.
-float CameraEngine::GetCosF(float f)
+//Primary Camera Sub Components.
+Float3 up;
+Float3 forward;
+Float3 right;
+
+//Player Position In World Space.
+Float3 position;
+
+//The Look Left/Right Rotation and Look Up/Down Rotation
+Int2 rotation_data;
+
+//Primary Camera Matrix.
+XMFLOAT4X4 camera_matrix;
+
+void BuildPrimaryCameraMatrix()
 {
-	int quadrant = ((int)(f / 90)) % 4;
-	int degree = (int)(f);
-	float remainder = f - degree;
-	degree -= (quadrant * 90);
+	//Right Vector.
+	camera_matrix._11 = right._1;
+	camera_matrix._21 = 0.0F;
+	camera_matrix._31 = right._3;
 
-	//Quadrant = 0-3, I = 0-89 Main Degree, R = 0-89 Decimal Degree Index.
-	if (quadrant == 0)
-	{
-		return (float)(DEGREE_LOOKUP_TABLE[degree] * 0.000015625) + 
-			((DEGREE_LOOKUP_TABLE[degree] - DEGREE_LOOKUP_TABLE[degree + 1]) * remainder);
-	}
-	else if (quadrant == 1)
-	{
-		return (float)(-DEGREE_LOOKUP_TABLE[90 - degree] * 0.000015625) - 
-			((DEGREE_LOOKUP_TABLE[90 - degree] - DEGREE_LOOKUP_TABLE[90 - degree + 1]) * remainder);
-	}
-	else if (quadrant == 2)
-	{
-		return (float)(-DEGREE_LOOKUP_TABLE[degree] * 0.000015625) - 
-			((DEGREE_LOOKUP_TABLE[degree] - DEGREE_LOOKUP_TABLE[degree + 1]) * remainder);
-	}
-	else if (quadrant == 3)
-	{
-		return (float)(DEGREE_LOOKUP_TABLE[90 - degree] * 0.000015625) + 
-			((DEGREE_LOOKUP_TABLE[90 - degree] - DEGREE_LOOKUP_TABLE[90 - degree + 1]) * remainder);
-	}
+	//Up Vector.
+	camera_matrix._12 = right._2 * forward._1;
+	camera_matrix._22 = up._2;
+	camera_matrix._32 = right._2 * forward._3;
+
+	//Forward Vector.
+	camera_matrix._13 = forward._1 * up._2;
+	camera_matrix._23 = -right._2;
+	camera_matrix._33 = forward._3 * up._2;
+
+	//Dot Product (Position, Right Vector).
+	camera_matrix._41 = -(position._1 * camera_matrix._11 + position._2 * camera_matrix._21 + position._3 * camera_matrix._31);
+
+	//Dot Product (Position, Up Vector).
+	camera_matrix._42 = -(position._1 * camera_matrix._12 + position._2 * camera_matrix._22 + position._3 * camera_matrix._32);
+
+	//Dot Product (Position, Forward Vector).
+	camera_matrix._43 = -(position._1 * camera_matrix._13 + position._2 * camera_matrix._23 + position._3 * camera_matrix._33);
 }
 
-//Operation does not support negative input no checks. 
-float CameraEngine::GetCosine(int lookup)
+void CreateFinalMatrixResult()
 {
-	int quadrant = (lookup / 90) % 4;
-	int degree = (lookup - (quadrant * 90));
-
-	if (quadrant == 0)
-		return (float)(DEGREE_LOOKUP_TABLE[degree] * 0.000015625);
-	else if (quadrant == 1)
-		return (float)(-DEGREE_LOOKUP_TABLE[90 - degree] * 0.000015625);
-	else if (quadrant == 2)
-		return (float)(-DEGREE_LOOKUP_TABLE[degree] * 0.000015625);
-	else if (quadrant == 3)
-		return (float)(DEGREE_LOOKUP_TABLE[90 - degree] * 0.000015625);
-	return 0.0F;
+	static const XMMATRIX PROJECTION_MATRIX = XMMatrixPerspectiveFovLH(XMConvertToRadians(45), ScreenManager::ASPECT_RATIO, 1, 1000);
+	DirectX::XMStoreFloat4x4(&CameraEngine::final_result, DirectX::XMLoadFloat4x4(&camera_matrix) * PROJECTION_MATRIX);
 }
 
-//Operation does not support negative input no checks. 
-float CameraEngine::GetSin(int lookup)
-{
-	int quadrant = (lookup / 90) % 4;
-	int degree = (lookup - (quadrant * 90));
+static int jump_index = 0;
+static Short2 jump_strength = { 0, 0};
+static Float4 jump_vector = { 0.0f, 0.0f, 0.0f, 0.0f };
+static bool jump_throttle = false;
+static bool sprinting = false;
 
-	if (quadrant == 0)
-		return (float)(DEGREE_LOOKUP_TABLE[90 - degree] * 0.000015625);
-	else if (quadrant == 1)
-		return (float)(DEGREE_LOOKUP_TABLE[degree] * 0.000015625);
-	else if (quadrant == 2)
-		return (float)(-DEGREE_LOOKUP_TABLE[90 - degree] * 0.000015625);
-	else if (quadrant == 3)
-		return (float)(-DEGREE_LOOKUP_TABLE[degree] * 0.000015625);
-	return 0.0F;
+void CameraEngine::Jump()
+{
+	int64_t temp = GameTime::AbsoluteFrameTicks();
+	int jump_frame = temp - jump_index;
+	if (jump_frame <= 40)
+		return;
+	jump_throttle = jump_frame <= 70;
+	jump_index = temp;
 }
 
-
-void CameraEngine::SetProjection(XMMATRIX *p_matrix)
+void CameraEngine::ResetPrimaryCameraMatrix()
 {
-	XMStoreFloat4x4(&projection, *p_matrix);
-}
+	position._1 = 0.0F;
+	position._2 = 1.1F;
+	position._3 = 0.0F;
 
-//Cos(0deg)   =  1
-//Cos(90deg)  =  0
-//Cos(180deg) = -1
-//Cos(270deg) =  0
+	rotation_data._1 = 0;
+	rotation_data._2 = 0;
 
-//Sin(0deg)   =  0
-//Sin(90deg)  =  1
-//Sin(180deg) =  0
-//Sin(270deg) = -1
-//Sin(360deg) =  0
+	forward._1 = 0.0f;
+	forward._2 = 0.0f;
+	forward._3 = 1.0f;
 
-//Cos(0) = 1.0 , Cos(30) = 0.866 , Has 0.134 Traversal. Smaller Initial Movement From 1 to 0.
-//Sin(0) = 0.0 , Sin(30) = 0.500 , Has 0.500 Traveraal. Larger Initial Movement From 0 to 1.
+	right._1 = 1.0f;
+	right._2 = 0.0f;
+	right._3 = 0.0f;
 
-void CameraEngine::InitializeCameraPosition()
-{
-	position.x = 0.0F;
-	position.y = 0.0F;
-	position.z = 0.0F;
+	up._1 = 0.0f;
+	up._2 = 1.0f;
+	up._3 = 0.0f;
 
-	rotation._1 = 0;
-	rotation._2 = 0;
-	rotation._3 = 0;
-
-	forward.x = 0.0f;
-	forward.y = 0.0f;
-	forward.z = 1.0f;
-
-	right.x = 1.0f;
-	right.y = 0.0f;
-	right.z = 0.0f;
-
-	up.x = 0.0f;
-	up.y = 1.0f;
-	up.z = 0.0f;
-
-	//Z Axis aka Forward Vector.
-	view_matrix._31 = 0;
-	view_matrix._32 = 0;
-	view_matrix._33 = 1;
-
-	//X Axis aka Right Vector.
-	view_matrix._11 = 1;
-	view_matrix._12 = 0;
-	view_matrix._13 = 0;
-
-	//Y Axis aka Up Vector.
-	view_matrix._21 = 0;
-	view_matrix._22 = 1;
-	view_matrix._23 = 0;
-
-	//W Axis aka Posisition Dot Product. 
-	view_matrix._41 = position.x * view_matrix._11 + position.y * view_matrix._21 + position.z * view_matrix._31;
-	view_matrix._42 = position.x * view_matrix._12 + position.y * view_matrix._22 + position.z * view_matrix._32;
-	view_matrix._43 = position.x * view_matrix._13 + position.y * view_matrix._23 + position.z * view_matrix._33;
+	BuildPrimaryCameraMatrix();
 
 	//Not Sure Unused atm. 
-	view_matrix._14 = 0.0F;
-	view_matrix._24 = 0.0F;
-	view_matrix._34 = 0.0F;
-	view_matrix._44 = 1.0F;
+	camera_matrix._14 = 0.0F;
+	camera_matrix._24 = 0.0F;
+	camera_matrix._34 = 0.0F;
+	camera_matrix._44 = 1.0F;
 
-	OutputDebugString(L"Hello World!!!!");
+	CreateFinalMatrixResult();
 }
 
-bool CameraEngine::ProcessCameraChanges()
+bool CameraEngine::PrimaryCameraUpdatedLookAt()
 {
+	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::A_BUTTON))
+		CameraEngine::Jump();
+
+	int jump_frame = GameTime::AbsoluteFrameTicks() - jump_index;
+
+	bool jumping = jump_frame <= 40;
+	bool block_movement = jump_frame <= 50;
+
+	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::LEFT_STICK_CLICK))
+		sprinting = !jumping;
+
 	XINPUT_GAMEPAD loaded_pad = XGameInput::GamePad();
 
-	signed short right_strength = loaded_pad.sThumbLX; //Move Left Right Joystick.
-	signed short forward_strength = loaded_pad.sThumbLY; //Move Forward Back Joystick.
+	signed int right_strength = loaded_pad.sThumbLX; //Move Left Right Joystick.
+	signed int forward_strength = loaded_pad.sThumbLY; //Move Forward Back Joystick.
+
+	if (sprinting)
+	{
+		if (forward_strength > 24000)
+			forward_strength *= 2;
+		else
+			sprinting = false;
+	}
+	if (jumping)
+	{
+		int jump_distance = 400 - (jump_frame - 20) * (jump_frame - 20);
+		position._2 = (float)(1.1 + jump_distance * 0.0015);
+
+		if (jump_frame == 0)
+		{
+			jump_strength._1 = right_strength * 0.5f;
+			jump_strength._2 = forward_strength * 0.5f;
+			jump_vector._1 = forward._1;
+			jump_vector._2 = forward._3;
+			jump_vector._3 = right._1;
+			jump_vector._4 = right._3;
+			sprinting = false;
+		}
+		else 
+		{
+			if (jump_throttle)
+			{
+				right_strength = jump_strength._1 * 0.5f;
+				forward_strength = jump_strength._2 * 0.5f;
+			}
+			else {
+				right_strength = jump_strength._1;
+				forward_strength = jump_strength._2;
+			}
+		}
+	}
+	else {
+		position._2 = (float) 1.1;
+		jump_strength._1 = 0;
+		jump_strength._2 = 0;
+	}
 
 	signed short turn_strength = loaded_pad.sThumbRX; //Turn Left Right Joystick.
 	signed short look_strength = loaded_pad.sThumbRY; //Look Up Down Joystick.
@@ -206,52 +185,52 @@ bool CameraEngine::ProcessCameraChanges()
 	unsigned int abs_turn = turn_strength * turn_strength;
 	unsigned int abs_look = look_strength * look_strength;
 
-	unsigned int dead_zone =  6400 * 6400; //Should be about at least 20% of joystick needs to be pressed. 
+	unsigned int dead_zone = 6400 * 6400; //Should be about at least 20% of joystick needs to be pressed. 
 
 	bool updated = false;
 
 	//If the player did in fact turn updated the camera movement vectors. 
 	if (abs_turn > dead_zone)
 	{
-		rotation._2 += turn_strength * 2;
+		rotation_data._2 += (turn_strength * (long)GameTime::DeltaTime_Micro()) / 5000.0f;
 		//rotation.y = 32768 * 10;
 
 		//0xB40000 = 360 * 32768 in hex form.
-		if (rotation._2 < 0) 
-			rotation._2 += 0xB40000;
-		if (rotation._2 >= 0xB40000)
-			rotation._2 -= 0xB40000;
+		if (rotation_data._2 < 0)
+			rotation_data._2 += 0xB40000;
+		if (rotation_data._2 >= 0xB40000)
+			rotation_data._2 -= 0xB40000;
 
-		float value = rotation._2 / 32768.0F;
+		float value = rotation_data._2 / 32768.0F;
 		double PI = 3.14159265;
 
-		forward.x = (float)sin(value * PI / 180);
-		forward.z = (float)cos(value * PI / 180);
+		forward._1 = (float)sin(value * PI / 180);
+		forward._3 = (float)cos(value * PI / 180);
 
-		int var = (rotation._2 + 0x2D0000);
+		int var = (rotation_data._2 + 0x2D0000);
 		if (var >= 0xB40000)
 			var -= 0xB40000;
 		value = var / 32768.0F;
 
-		right.x = (float)sin(value * PI / 180);  //Right Vector X without Up Vector.
-		right.z = (float)cos(value * PI / 180);  //Right Vector Z without Up Vector.
+		right._1 = (float)sin(value * PI / 180);  //Right Vector X without Up Vector.
+		right._3 = (float)cos(value * PI / 180);  //Right Vector Z without Up Vector.
 
 		updated = true;
 	}
 
 	if (abs_look > dead_zone)
 	{
-		rotation._1 -= look_strength * 2;
-		//rotation.x = 32768 * 10;
+		rotation_data._1 -= (look_strength * (long)GameTime::DeltaTime_Micro()) / 5000.0f;
+		//rotation_data.x = 32768 * 10;
 
 		//0x230000 = Hex version of 70.0.
 		//We force the Look rotation to a range of -70 degrees and 70 degrees.
-		if (rotation._1 < -0x230000)
-			rotation._1 = -0x230000;
-		if (rotation._1 > 0x230000)
-			rotation._1 = 0x230000;
+		if (rotation_data._1 < -0x230000)
+			rotation_data._1 = -0x230000;
+		if (rotation_data._1 > 0x230000)
+			rotation_data._1 = 0x230000;
 
-		signed int camera_rotation = rotation._1;
+		signed int camera_rotation = rotation_data._1;
 		double PI = 3.14159265;
 
 		//Now we have a postive value between 0-70 (positive) or 290-359 (negative). 
@@ -260,56 +239,58 @@ bool CameraEngine::ProcessCameraChanges()
 
 		float value = camera_rotation / 32768.0F;
 
-		right.y = (float)sin(value * PI / 180);
-		up.y = (float)cos(value * PI / 180);
+		right._2 = (float)sin(value * PI / 180);
+		up._2 = (float)cos(value * PI / 180);
 
 		updated = true;
 	}
 
 	if (abs_forward > dead_zone)
 	{
-		float strength = (float)(forward_strength * 0.00003125 * 0.15);
-		position.x += strength * forward.x;
-		position.z += strength * forward.z;
-		updated = true;
+		float strength = (float)(forward_strength * (long)GameTime::DeltaTime_Micro()) / 6400000000L;
+		if (jumping)
+		{
+			position._1 += strength * jump_vector._1;
+			position._3 += strength * jump_vector._2;
+			updated = true;
+		}
+		else if (!block_movement) {
+			position._1 += strength * forward._1;
+			position._3 += strength * forward._3;
+			updated = true;
+		}
 	}
 
 	if (abs_right > dead_zone)
 	{
-		float strength = (float)(right_strength * 0.00003125 * 0.15);
-		position.x += strength * right.x;
-		position.z += strength * right.z;
+		float strength = (float)(right_strength * (long)GameTime::DeltaTime_Micro()) / 6400000000L;
+		if (jumping)
+		{
+			position._1 += strength * jump_vector._3;
+			position._3 += strength * jump_vector._4;
+			updated = true;
+		}
+		else if (!block_movement) {
+			position._1 += strength * right._1;
+			position._3 += strength * right._3;
+			updated = true;
+		}
+	}
+
+	if (block_movement && !jumping)
+	{
+		//41 - 50
+		int jump_distance = (25 - (jump_frame - 45) * (jump_frame - 45));
+		float brakes = jump_distance * 0.005;
+		position._2 = 1.1f - brakes;
 		updated = true;
 	}
 
-	return updated;
-}
+	if (updated || jumping)
+	{
+		BuildPrimaryCameraMatrix();
+		CreateFinalMatrixResult();
+	}
 
-
-//right.y IS NOT in use rather it's a placeholder for Y sin vlaue.
-void CameraEngine::UpdateViewMatrix()
-{
-	//Right Vector.
-	view_matrix._11 = right.x;
-	view_matrix._21 = 0.0F;
-	view_matrix._31 = right.z;
-
-	//Up Vector.
-	view_matrix._12 = right.y * forward.x;
-	view_matrix._22 = up.y;
-	view_matrix._32 = right.y * forward.z;
-
-	//Forward Vector.
-	view_matrix._13 = forward.x * up.y;
-	view_matrix._23 = -right.y;
-	view_matrix._33 = forward.z * up.y;
-
-	//Dot Product (Position, Right Vector).
-	view_matrix._41 = -(position.x * view_matrix._11 + position.y * view_matrix._21 + position.z * view_matrix._31);
-
-	//Dot Product (Position, Up Vector).
-	view_matrix._42 = -(position.x * view_matrix._12 + position.y * view_matrix._22 + position.z * view_matrix._32);
-
-	//Dot Product (Position, Forward Vector).
-	view_matrix._43 = -(position.x * view_matrix._13 + position.y * view_matrix._23 + position.z * view_matrix._33);
+	return updated || jumping;
 }

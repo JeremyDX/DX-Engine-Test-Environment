@@ -8,6 +8,8 @@ class FontResource
 
 	public:
 		static void SetDrawPosition(int16_t x, int16_t y);
+		uint16_t AddDynamicallyToBuffer(Vertex32Byte * buffer, int64_t num, uint16_t offset);
+		uint16_t AddDynamicallyToBuffer(Vertex32Byte & buffer, int64_t num, uint16_t offset);
 		uint16_t AddDynamicallyToBuffer(int64_t num, uint16_t offset);
 		uint16_t AddDynamicallyToBuffer(const char *c, uint16_t offset);
 

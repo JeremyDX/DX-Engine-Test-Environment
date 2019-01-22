@@ -8,11 +8,11 @@
 */
 __int32 XModelMesh::CreateTexturedSquare(Vertex32Byte *verts, int offset, Float3 Col, int texture_width, int texture_height, int drawX, int drawY)
 {
-	float offsetX = (2 * drawX) / ScreenManager::PREFERRED_CANVAS_WIDTH;
-	float offsetY = (2 * drawY) / ScreenManager::PREFERRED_CANVAS_HEIGHT;
+	float offsetX = (2 * drawX) / (float)ScreenManager::PREFERRED_CANVAS_WIDTH;
+	float offsetY = (2 * drawY) / (float)ScreenManager::PREFERRED_CANVAS_HEIGHT;
 
-	float width = (2 * texture_width) / ScreenManager::PREFERRED_CANVAS_WIDTH;
-	float height = (2 * texture_height) / ScreenManager::PREFERRED_CANVAS_HEIGHT;
+	float width = (2 * texture_width) / (float)ScreenManager::PREFERRED_CANVAS_WIDTH;
+	float height = (2 * texture_height) / (float)ScreenManager::PREFERRED_CANVAS_HEIGHT;
 
 	float top = 1.0F - offsetY;
 	float bottom = 1.0f - height - offsetY;
@@ -31,47 +31,48 @@ __int32 XModelMesh::CreateTexturedSquare(Vertex32Byte *verts, int offset, Float3
 	return offset;
 }
 
-void XModelMesh::CreateCubeObject(ID3D11Device* device, float xPos, float yPos, float zPos)
+void XModelMesh::CreateCubeObject(ID3D11Device* device,  float xPos, float yPos, float zPos)
 {
-	/*// create vertices to represent the corners of the Hypercraft
-	VertexPositionTexture OurVertices[] =
+	Float3 Color = { 1.0f, 1.0f, 1.0f };
+
+	Vertex32Byte OurVertices[] =
 	{
 		//Texture
 		//0,1 - 0,0 - 1,1 - 1-0 Clockwise Starting from Bottom.
 
 		//BACK
 		//BR,TR,BL,TL
-		{xPos + 1.0f,  yPos + -1.0f, zPos + 1.0f,  0.0f, 1.0f},
-		{xPos + 1.0f,  yPos + 1.0f, zPos + 1.0f,  0.0f, 0.0f},
-		{xPos + -1.0f,  yPos + -1.0f, zPos + 1.0f,  1.0f, 1.0f},
-		{xPos + -1.0f,  yPos + 1.0f, zPos + 1.0f,  1.0f, 0.0f},
+		{xPos + 1.0f,  yPos + -1.0f, zPos + 1.0f, Color._1, Color._2, Color._3,  0.0f, 1.0f},
+		{xPos + 1.0f,  yPos + 1.0f, zPos + 1.0f, Color._1, Color._2, Color._3, 0.0f, 0.0f},
+		{xPos + -1.0f,  yPos + -1.0f, zPos + 1.0f, Color._1, Color._2, Color._3, 1.0f, 1.0f},
+		{xPos + -1.0f,  yPos + 1.0f, zPos + 1.0f, Color._1, Color._2, Color._3, 1.0f, 0.0f},
 
 		//FRONT
 		//BL,TL,BR,TR
-		{xPos + -1.0f, yPos + -1.0f, zPos + -1.0f,  0.0f, 1.0f},
-		{xPos + -1.0f, yPos + 1.0f, zPos + -1.0f,  0.0f, 0.0f},
-		{xPos + 1.0f, yPos + -1.0f, zPos + -1.0f,  1.0f, 1.0f},
-		{xPos + 1.0f, yPos + 1.0f, zPos + -1.0f,  1.0f, 0.0f},
+		{xPos + -1.0f, yPos + -1.0f, zPos + -1.0f, Color._1, Color._2, Color._3, 0.0f, 1.0f},
+		{xPos + -1.0f, yPos + 1.0f, zPos + -1.0f, Color._1, Color._2, Color._3, 0.0f, 0.0f},
+		{xPos + 1.0f, yPos + -1.0f, zPos + -1.0f, Color._1, Color._2, Color._3, 1.0f, 1.0f},
+		{xPos + 1.0f, yPos + 1.0f, zPos + -1.0f, Color._1, Color._2, Color._3, 1.0f, 0.0f},
 
-		{xPos + -1.0f, yPos + 1.0f, zPos + -1.0f,     0.0f, 0.0f},    // side 3
-		{xPos + -1.0f, yPos + 1.0f, zPos + 1.0f,      0.0f, 1.0f},
-		{xPos + 1.0f, yPos + 1.0f, zPos + -1.0f,      1.0f, 0.0f},
-		{xPos + 1.0f, yPos + 1.0f, zPos + 1.0f,		1.0f, 1.0f},
+		{xPos + -1.0f, yPos + 1.0f, zPos + -1.0f, Color._1, Color._2, Color._3,    0.0f, 0.0f},    // side 3
+		{xPos + -1.0f, yPos + 1.0f, zPos + 1.0f,Color._1, Color._2, Color._3,      0.0f, 1.0f},
+		{xPos + 1.0f, yPos + 1.0f, zPos + -1.0f,Color._1, Color._2, Color._3,      1.0f, 0.0f},
+		{xPos + 1.0f, yPos + 1.0f, zPos + 1.0f,	Color._1, Color._2, Color._3,	1.0f, 1.0f},
 
-		{xPos + -1.0f, yPos + -1.0f, zPos + -1.0f,  0.0f, 0.0f},    // side 4
-		{xPos + 1.0f,  yPos + -1.0f, zPos + -1.0f,    0.0f, 1.0f},
-		{xPos + -1.0f, yPos + -1.0f, zPos + 1.0f,   1.0f, 0.0f},
-		{xPos + 1.0f, yPos + -1.0f, zPos + 1.0f,   1.0f, 1.0f},
+		{xPos + -1.0f, yPos + -1.0f, zPos + -1.0f,Color._1, Color._2, Color._3,  0.0f, 0.0f},    // side 4
+		{xPos + 1.0f,  yPos + -1.0f, zPos + -1.0f,Color._1, Color._2, Color._3,    0.0f, 1.0f},
+		{xPos + -1.0f, yPos + -1.0f, zPos + 1.0f, Color._1, Color._2, Color._3,  1.0f, 0.0f},
+		{xPos + 1.0f, yPos + -1.0f, zPos + 1.0f, Color._1, Color._2, Color._3,  1.0f, 1.0f},
 
-		{xPos + 1.0f, yPos + -1.0f,zPos + -1.0f,    0.0f, 0.0f},    // side 5
-		{xPos + 1.0f, yPos + 1.0f,zPos + -1.0f,  0.0f, 1.0f},
-		{xPos + 1.0f, yPos + -1.0f, zPos + 1.0f,     1.0f, 0.0f},
-		{xPos + 1.0f, yPos + 1.0f,zPos + 1.0f, 1.0f, 1.0f},
+		{xPos + 1.0f, yPos + -1.0f,zPos + -1.0f,Color._1, Color._2, Color._3,    0.0f, 0.0f},    // side 5
+		{xPos + 1.0f, yPos + 1.0f,zPos + -1.0f, Color._1, Color._2, Color._3, 0.0f, 1.0f},
+		{xPos + 1.0f, yPos + -1.0f, zPos + 1.0f,Color._1, Color._2, Color._3,     1.0f, 0.0f},
+		{xPos + 1.0f, yPos + 1.0f,zPos + 1.0f, Color._1, Color._2, Color._3,1.0f, 1.0f},
 
-		{xPos + -1.0f, yPos + -1.0f,zPos + -1.0f,  0.0f, 0.0f},    // side 6
-		{xPos + -1.0f, yPos + -1.0f,zPos + 1.0f,  0.0f, 1.0f},
-		{xPos + -1.0f, yPos + 1.0f,zPos + -1.0f,  1.0f, 0.0f},
-		{xPos + -1.0f, yPos + 1.0f,zPos + 1.0f, 1.0f, 1.0f},
+		{xPos + -1.0f, yPos + -1.0f,zPos + -1.0f,Color._1, Color._2, Color._3,  0.0f, 0.0f},    // side 6
+		{xPos + -1.0f, yPos + -1.0f,zPos + 1.0f,Color._1, Color._2, Color._3,  0.0f, 1.0f},
+		{xPos + -1.0f, yPos + 1.0f,zPos + -1.0f, Color._1, Color._2, Color._3, 1.0f, 0.0f},
+		{xPos + -1.0f, yPos + 1.0f,zPos + 1.0f, Color._1, Color._2, Color._3,1.0f, 1.0f}
 	};
 
 	int length = ARRAYSIZE(OurVertices);
@@ -83,7 +84,7 @@ void XModelMesh::CreateCubeObject(ID3D11Device* device, float xPos, float yPos, 
 
 	// create the vertex buffer
 	D3D11_BUFFER_DESC bd = { 0 };
-	bd.ByteWidth = sizeof(VertexPositionTexture) * vertex_count;
+	bd.ByteWidth = sizeof(Vertex32Byte) * vertex_count;
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
 	D3D11_SUBRESOURCE_DATA srd = { VertexStorage, 0, 0 };
@@ -121,5 +122,4 @@ void XModelMesh::CreateCubeObject(ID3D11Device* device, float xPos, float yPos, 
 	D3D11_SUBRESOURCE_DATA isrd = { IndexStorage, 0, 0 };
 
 	device->CreateBuffer(&ibd, &isrd, &indexbuffer);
-	*/
 }
