@@ -8,6 +8,7 @@
 #include "XModelMesh.h"
 #include "ContentLoader.h"
 #include "GameTime.h"
+#include "Animation.h"
 #include "ScreenManager.h"
 
 using namespace Microsoft::WRL;
@@ -258,6 +259,8 @@ void InitializeDirectXProperties()
 
 	ContentLoader::LoadContentStage(0); //First Content Batch.
 	ContentLoader::PresentWindow(0);    //Show Us The First Screen!!
+
+	Animation::LoadAnimations();
 
 	GameTime::Begin(); //It's SAFE! to PresentWindow before we begin ticking. It'll initalize as Frame Index 0.
 }

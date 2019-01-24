@@ -258,6 +258,7 @@
     <Image Include="Assets\Wood.png" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Animation.h" />
     <ClInclude Include="CameraEngine.h" />
     <ClInclude Include="ContentLoader.h" />
     <ClInclude Include="Engine.h" />
@@ -275,6 +276,7 @@
     <ClInclude Include="TextureResource.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Animation.cpp" />
     <ClCompile Include="CameraEngine.cpp" />
     <ClCompile Include="ContentLoader.cpp" />
     <ClCompile Include="Engine.cpp" />

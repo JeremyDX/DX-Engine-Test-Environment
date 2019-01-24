@@ -25,6 +25,7 @@
     <ClCompile Include="ScreenManager.cpp" />
     <ClCompile Include="Constants.cpp" />
     <ClCompile Include="XWicLoader.cpp" />
+    <ClCompile Include="Animation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -42,6 +43,7 @@
     <ClInclude Include="ScreenManager.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="XWicLoader.h" />
+    <ClInclude Include="Animation.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\0_FONT.PNG">

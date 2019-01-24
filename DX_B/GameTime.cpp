@@ -23,6 +23,7 @@ int64_t current_time_stamp = 0L;
 
 //This is the delta time from last frame to current time.
 int64_t delta_time = 0L;
+int64_t delta_frame = 0L;
 
 //This is the elapsed time from the start time in cpu cycles.
 int64_t total_elapsed_time = 0L;
@@ -59,7 +60,11 @@ void GameTime::Tick()
 	delta_time = current_time_stamp - previous_time_stamp;
 
 	total_elapsed_time = current_time_stamp - clock_start_time;
+
+	int64_t lastFrameTicks = absolute_frame_ticks;
 	absolute_frame_ticks = seconds_per_frame * total_elapsed_time;
+
+	delta_frame = absolute_frame_ticks - lastFrameTicks;
 
 	++gameloop_count;
 }
@@ -147,6 +152,11 @@ int64_t GameTime::TotalElapsedCPUCycles()
 int64_t GameTime::DeltaTime_CPUCycle()
 {
 	return delta_time;
+}
+
+int64_t GameTime::DeltaTime_Frames()
+{
+	return delta_frame;
 }
 
 double GameTime::DeltaTime_Nano()

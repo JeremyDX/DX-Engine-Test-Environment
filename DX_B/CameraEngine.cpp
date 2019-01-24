@@ -2,6 +2,7 @@
 #include "CameraEngine.h"
 #include "XGameInput.h"
 #include "GameTime.h"
+#include "Animation.h"
 #include "ScreenManager.h"
 
 using namespace DirectX;
@@ -70,22 +71,6 @@ void CreateFinalMatrixResult()
 	DirectX::XMStoreFloat4x4(&CameraEngine::final_result, DirectX::XMLoadFloat4x4(&camera_matrix) * PROJECTION_MATRIX);
 }
 
-static int jump_index = 0;
-static Short2 jump_strength = { 0, 0};
-static Float4 jump_vector = { 0.0f, 0.0f, 0.0f, 0.0f };
-static bool jump_throttle = false;
-static bool sprinting = false;
-
-void CameraEngine::Jump()
-{
-	int64_t temp = GameTime::AbsoluteFrameTicks();
-	int jump_frame = temp - jump_index;
-	if (jump_frame <= 40)
-		return;
-	jump_throttle = jump_frame <= 70;
-	jump_index = temp;
-}
-
 void CameraEngine::ResetPrimaryCameraMatrix()
 {
 	position._1 = 0.0F;
@@ -118,81 +103,130 @@ void CameraEngine::ResetPrimaryCameraMatrix()
 	CreateFinalMatrixResult();
 }
 
+static int forced_animation_index = 0;
+static Float4 anim_move_vectors = { 0.0f, 0.0f, 0.0f, 0.0f };
+static Float3 base_animation_position = { 0.0f, 0.0f, 0.0f };
+static Int2 animation_move_strength = { 0, 0 };
+static bool throttled_jump = false;
+static bool sprinting = false;
+
+static int HORIZONTAL_SPEED = 4;
+static int VERTICAL_SPEED = 4;
+
 bool CameraEngine::PrimaryCameraUpdatedLookAt()
 {
-	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::A_BUTTON))
-		CameraEngine::Jump();
+	int64_t current_frame = GameTime::AbsoluteFrameTicks();
+	Animation &ref = Animation::GetAnimation(2);
 
-	int jump_frame = GameTime::AbsoluteFrameTicks() - jump_index;
+	bool updated = false;
 
-	bool jumping = jump_frame <= 40;
-	bool block_movement = jump_frame <= 50;
-
-	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::LEFT_STICK_CLICK))
-		sprinting = !jumping;
-
-	XINPUT_GAMEPAD loaded_pad = XGameInput::GamePad();
+	XINPUT_GAMEPAD& loaded_pad = XGameInput::GamePad();
 
 	signed int right_strength = loaded_pad.sThumbLX; //Move Left Right Joystick.
 	signed int forward_strength = loaded_pad.sThumbLY; //Move Forward Back Joystick.
-
-	if (sprinting)
-	{
-		if (forward_strength > 24000)
-			forward_strength *= 2;
-		else
-			sprinting = false;
-	}
-	if (jumping)
-	{
-		int jump_distance = 400 - (jump_frame - 20) * (jump_frame - 20);
-		position._2 = (float)(1.1 + jump_distance * 0.0015);
-
-		if (jump_frame == 0)
-		{
-			jump_strength._1 = right_strength * 0.5f;
-			jump_strength._2 = forward_strength * 0.5f;
-			jump_vector._1 = forward._1;
-			jump_vector._2 = forward._3;
-			jump_vector._3 = right._1;
-			jump_vector._4 = right._3;
-			sprinting = false;
-		}
-		else 
-		{
-			if (jump_throttle)
-			{
-				right_strength = jump_strength._1 * 0.5f;
-				forward_strength = jump_strength._2 * 0.5f;
-			}
-			else {
-				right_strength = jump_strength._1;
-				forward_strength = jump_strength._2;
-			}
-		}
-	}
-	else {
-		position._2 = (float) 1.1;
-		jump_strength._1 = 0;
-		jump_strength._2 = 0;
-	}
 
 	signed short turn_strength = loaded_pad.sThumbRX; //Turn Left Right Joystick.
 	signed short look_strength = loaded_pad.sThumbRY; //Look Up Down Joystick.
 
 	unsigned int abs_forward = forward_strength * forward_strength;
 	unsigned int abs_right = right_strength * right_strength;
-	unsigned int abs_turn = turn_strength * turn_strength;
-	unsigned int abs_look = look_strength * look_strength;
-
 	unsigned int dead_zone = 6400 * 6400; //Should be about at least 20% of joystick needs to be pressed. 
 
-	bool updated = false;
+	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::LEFT_STICK_CLICK))
+	{
+		sprinting = true;
+	}
+
+	if (sprinting)
+	{
+		sprinting = sprinting = forward_strength > 26000;
+		if (sprinting)
+		{
+			forward_strength *= 2;
+		}
+	}
+
+	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::A_BUTTON))
+	{
+		int change = (current_frame - forced_animation_index);
+		if (change > 49)
+		{
+			throttled_jump = change < ref.Length + 6;
+			forced_animation_index = throttled_jump ? current_frame - 20 : current_frame;
+			base_animation_position._1 = position._1;
+			base_animation_position._2 = 1.1F;
+			base_animation_position._3 = position._3;
+			animation_move_strength._1 = abs_right > dead_zone ? right_strength : 0;
+			animation_move_strength._2 = abs_forward > dead_zone ? forward_strength : 0;
+			if (throttled_jump && !sprinting)
+			{
+				animation_move_strength._1 /= 2;
+				animation_move_strength._2 /= 2;
+			}
+			anim_move_vectors._1 = right._1;
+			anim_move_vectors._2 = right._3;
+			anim_move_vectors._3 = forward._1;
+			anim_move_vectors._4 = forward._3;
+			sprinting = false;
+		}
+	}
+
+	int jump_frame = current_frame - forced_animation_index;
+	bool isJumping = jump_frame < ref.Length;
+	bool isBlocking = jump_frame < 50;
+
+	if (isJumping)
+	{
+		updated = true;
+		 
+		if (jump_frame <= 9)
+		{
+			//0,3,6,9
+			position._2 = base_animation_position._2 - (0.0160 * (jump_frame + 1));
+			forced_animation_index -= 2;
+		}
+		else if (jump_frame <= 19)
+		{
+			//12,15,18,
+			int value = 10 - (jump_frame - 9);
+			position._2 = base_animation_position._2 - (0.0160 * value);
+			forced_animation_index -= 2;
+		}
+		else if (jump_frame <= 49)
+		{
+			//21 to 49 = 29 Frames.
+			int value = 196 - ((jump_frame - 34) * (jump_frame - 34));
+			if (throttled_jump)
+				value /= 2;
+			position._2 = base_animation_position._2 + ((float)value / 196);
+		} 
+		else if (jump_frame <= 59)
+		{
+			//10 Frames.
+			int value = 10 - (jump_frame - 49); 
+			position._2 = base_animation_position._2 - (0.0160 * value);
+		}
+		if (jump_frame >= 20 && jump_frame <= 49)
+		{
+			//1 to 30.
+			float r_strength = (float)(animation_move_strength._1 * (jump_frame - 19)) / 600000L;
+			float f_strength = (float)(animation_move_strength._2 * (jump_frame - 19)) / 600000L;
+
+			position._1 = base_animation_position._1 + r_strength * anim_move_vectors._1;
+			position._3 = base_animation_position._3 + r_strength * anim_move_vectors._2;
+
+			position._1 = position._1 + f_strength * anim_move_vectors._3;
+			position._3 = position._3 + f_strength * anim_move_vectors._4;
+		}
+	}
+
+	unsigned int abs_turn = turn_strength * turn_strength;
+	unsigned int abs_look = look_strength * look_strength;
 
 	//If the player did in fact turn updated the camera movement vectors. 
 	if (abs_turn > dead_zone)
 	{
-		rotation_data._2 += (turn_strength * (long)GameTime::DeltaTime_Micro()) / 5000.0f;
+		rotation_data._2 += (turn_strength * (long)GameTime::DeltaTime_Frames() * HORIZONTAL_SPEED);
 		//rotation.y = 32768 * 10;
 
 		//0xB40000 = 360 * 32768 in hex form.
@@ -220,7 +254,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 	if (abs_look > dead_zone)
 	{
-		rotation_data._1 -= (look_strength * (long)GameTime::DeltaTime_Micro()) / 5000.0f;
+		rotation_data._1 -= (look_strength * (long)GameTime::DeltaTime_Frames() * VERTICAL_SPEED);
 		//rotation_data.x = 32768 * 10;
 
 		//0x230000 = Hex version of 70.0.
@@ -245,52 +279,27 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		updated = true;
 	}
 
-	if (abs_forward > dead_zone)
+	if (!isBlocking && abs_forward > dead_zone)
 	{
-		float strength = (float)(forward_strength * (long)GameTime::DeltaTime_Micro()) / 6400000000L;
-		if (jumping)
-		{
-			position._1 += strength * jump_vector._1;
-			position._3 += strength * jump_vector._2;
-			updated = true;
-		}
-		else if (!block_movement) {
-			position._1 += strength * forward._1;
-			position._3 += strength * forward._3;
-			updated = true;
-		}
-	}
-
-	if (abs_right > dead_zone)
-	{
-		float strength = (float)(right_strength * (long)GameTime::DeltaTime_Micro()) / 6400000000L;
-		if (jumping)
-		{
-			position._1 += strength * jump_vector._3;
-			position._3 += strength * jump_vector._4;
-			updated = true;
-		}
-		else if (!block_movement) {
-			position._1 += strength * right._1;
-			position._3 += strength * right._3;
-			updated = true;
-		}
-	}
-
-	if (block_movement && !jumping)
-	{
-		//41 - 50
-		int jump_distance = (25 - (jump_frame - 45) * (jump_frame - 45));
-		float brakes = jump_distance * 0.005;
-		position._2 = 1.1f - brakes;
+		float strength = (float)(forward_strength * (long)GameTime::DeltaTime_Frames()) / 600000L;
+		position._1 += strength * forward._1;
+		position._3 += strength * forward._3;
 		updated = true;
 	}
 
-	if (updated || jumping)
+	if (!isBlocking && abs_right > dead_zone)
+	{
+		float strength = (float)(right_strength * (long)GameTime::DeltaTime_Frames()) / 600000L;
+		position._1 += strength * right._1;
+		position._3 += strength * right._3;
+		updated = true;
+	}
+
+	if (updated)
 	{
 		BuildPrimaryCameraMatrix();
 		CreateFinalMatrixResult();
 	}
 
-	return updated || jumping;
+	return updated;
 }

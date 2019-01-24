@@ -25,6 +25,7 @@ public:
 	static  double TotalElapsedSeconds();
 
 	static int64_t DeltaTime_CPUCycle();
+	static int64_t DeltaTime_Frames();
 	static  double DeltaTime_Nano();
 	static  double DeltaTime_Micro();
 	static  double DeltaTime_Milli();
