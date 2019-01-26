@@ -1,7 +1,86 @@
 #include "pch.h"
 
 #include "XModelMesh.h"
+#include "Landscape.h"
 #include "ScreenManager.h"
+
+struct ObjectDefiniton
+{
+	Int3 collision_size = { 0 };
+	uint16_t buffer_begin = 0;
+	uint16_t buffer_end = 0;
+	uint8_t id = 0;
+};
+
+Landscape landscapes[9];
+
+static Vertex20Byte object_buffer[4096];
+
+static ObjectDefiniton *definitions;
+
+/*
+* Once again.. hardcoded :(
+*/
+void XModelMesh::LoadObjectDefintions()
+{
+	definitions = new ObjectDefiniton[1];
+
+	int object_id = 0;
+	int buffer_index = -1;
+	int begin = 0;
+
+	object_buffer[++buffer_index] = { -0.549039, -0.1, 0.550959, 1.0f, 1.0f };
+	object_buffer[++buffer_index] = { -0.549039, 0.1, 0.550959, 0.0f, 1.0f };
+	object_buffer[++buffer_index] = { -0.550959, 0.1, -0.549039, 0.0f, 0.0f };
+
+	object_buffer[++buffer_index] = { -0.550959, 0.1, -0.549039, 0.0f, 0.0f };
+	object_buffer[++buffer_index] = { -0.550959, -0.1, -0.549039, 1.0f, 0.0f };
+	object_buffer[++buffer_index] = { -0.549039, -0.1, 0.550959, 1.0f, 1.0f };
+
+	object_buffer[++buffer_index] = { -0.550959, -0.1, -0.549039, 1.0f, 1.0f };
+	object_buffer[++buffer_index] = { -0.550959, 0.1, -0.549039, 0.0f, 1.0f };
+	object_buffer[++buffer_index] = { 0.549039, 0.1, -0.550959, 0.0f, 0.0f };
+
+	object_buffer[++buffer_index] = { 0.549039, 0.1, -0.550959, 0.0f, 0.0f };
+	object_buffer[++buffer_index] = { 0.549039, -0.1, -0.550959, 1.0f, 0.0f };
+	object_buffer[++buffer_index] = { -0.550959, -0.1, -0.549039, 1.0f, 1.0f };
+
+	object_buffer[++buffer_index] = { 0.549039, -0.1, -0.550959, 1.0f, 1.0f };
+	object_buffer[++buffer_index] = { 0.549039, 0.1, -0.550959, 0.0f, 1.0f };
+	object_buffer[++buffer_index] = { 0.550959, 0.1, 0.549039, 0.0f, 0.0f };
+
+	object_buffer[++buffer_index] = { 0.550959, 0.1, 0.549039, 0.0f, 0.0f };
+	object_buffer[++buffer_index] = { 0.550959, -0.1, 0.549039, 1.0f, 0.0f };
+	object_buffer[++buffer_index] = { 0.549039, -0.1, -0.550959, 1.0f, 1.0f };
+
+	object_buffer[++buffer_index] = { 0.550959, -0.1, 0.549039, 1.0f, 1.0f };
+	object_buffer[++buffer_index] = { 0.550959, 0.1, 0.549039, 0.0f, 1.0f };
+	object_buffer[++buffer_index] = { -0.549039, 0.1, 0.550959, 0.0f, 0.0f };
+
+	object_buffer[++buffer_index] = { -0.549039, 0.1, 0.550959, 0.0f, 0.0f };
+	object_buffer[++buffer_index] = { -0.549039, -0.1, 0.550959, 1.0f, 0.0f };
+	object_buffer[++buffer_index] = { 0.550959, -0.1, 0.549039, 1.0f, 1.0f };
+
+	object_buffer[++buffer_index] = { -0.550959, -0.1, -0.549039, 1.0f, 1.0f };
+	object_buffer[++buffer_index] = { 0.549039, -0.1, -0.550959, 0.0f, 1.0f };
+	object_buffer[++buffer_index] = { 0.550959, -0.1, 0.549039, 0.0f, 0.0f };
+
+	object_buffer[++buffer_index] = { 0.550959, -0.1, 0.549039, 0.0f, 0.0f };
+	object_buffer[++buffer_index] = { -0.549039, -0.1, 0.550959, 1.0f, 0.0f };
+	object_buffer[++buffer_index] = { -0.550959, -0.1, -0.549039, 1.0f, 1.0f };
+
+	object_buffer[++buffer_index] = { 0.549039, 0.1, -0.550959, 1.0f, 1.0f };
+	object_buffer[++buffer_index] = { -0.550959, 0.1, -0.549039, 0.0f, 1.0f };
+	object_buffer[++buffer_index] = { -0.549039, 0.1, 0.550959, 0.0f, 0.0f };
+
+	object_buffer[++buffer_index] = { -0.549039, 0.1, 0.550959, 0.0f, 0.0f };
+	object_buffer[++buffer_index] = { 0.550959, 0.1, 0.549039, 1.0f, 0.0f };
+	object_buffer[++buffer_index] = { 0.549039, 0.1, -0.550959, 1.0f, 1.0f };
+
+	definitions[object_id].buffer_begin = begin;
+	definitions[object_id].buffer_end = buffer_index;
+	definitions[object_id].id = object_id;
+}
 
 /*
 * Loads a Full Size Texture.
@@ -31,95 +110,22 @@ __int32 XModelMesh::CreateTexturedSquare(Vertex32Byte *verts, int offset, Float3
 	return offset;
 }
 
-void XModelMesh::CreateCubeObject(ID3D11Device* device,  float xPos, float yPos, float zPos)
+__int32 XModelMesh::InsertObjectToMap(Vertex32Byte * verts, int & offset, int id, int xunits, int yunits, int zunits)
 {
-	Float3 Color = { 1.0f, 1.0f, 1.0f };
-
-	Vertex32Byte OurVertices[] =
+	float x = xunits / 100.0f;
+	float y = yunits / 100.0f;
+	float z = zunits / 100.0f;
+	Float3 c = { 1.0f, 1.0f, 1.0f };
+	ObjectDefiniton &obj = definitions[id];
+	for (int i = obj.buffer_begin; i <= obj.buffer_end; ++i)
 	{
-		//Texture
-		//0,1 - 0,0 - 1,1 - 1-0 Clockwise Starting from Bottom.
-
-		//BACK
-		//BR,TR,BL,TL
-		{xPos + 1.0f,  yPos + -1.0f, zPos + 1.0f, Color._1, Color._2, Color._3,  0.0f, 1.0f},
-		{xPos + 1.0f,  yPos + 1.0f, zPos + 1.0f, Color._1, Color._2, Color._3, 0.0f, 0.0f},
-		{xPos + -1.0f,  yPos + -1.0f, zPos + 1.0f, Color._1, Color._2, Color._3, 1.0f, 1.0f},
-		{xPos + -1.0f,  yPos + 1.0f, zPos + 1.0f, Color._1, Color._2, Color._3, 1.0f, 0.0f},
-
-		//FRONT
-		//BL,TL,BR,TR
-		{xPos + -1.0f, yPos + -1.0f, zPos + -1.0f, Color._1, Color._2, Color._3, 0.0f, 1.0f},
-		{xPos + -1.0f, yPos + 1.0f, zPos + -1.0f, Color._1, Color._2, Color._3, 0.0f, 0.0f},
-		{xPos + 1.0f, yPos + -1.0f, zPos + -1.0f, Color._1, Color._2, Color._3, 1.0f, 1.0f},
-		{xPos + 1.0f, yPos + 1.0f, zPos + -1.0f, Color._1, Color._2, Color._3, 1.0f, 0.0f},
-
-		{xPos + -1.0f, yPos + 1.0f, zPos + -1.0f, Color._1, Color._2, Color._3,    0.0f, 0.0f},    // side 3
-		{xPos + -1.0f, yPos + 1.0f, zPos + 1.0f,Color._1, Color._2, Color._3,      0.0f, 1.0f},
-		{xPos + 1.0f, yPos + 1.0f, zPos + -1.0f,Color._1, Color._2, Color._3,      1.0f, 0.0f},
-		{xPos + 1.0f, yPos + 1.0f, zPos + 1.0f,	Color._1, Color._2, Color._3,	1.0f, 1.0f},
-
-		{xPos + -1.0f, yPos + -1.0f, zPos + -1.0f,Color._1, Color._2, Color._3,  0.0f, 0.0f},    // side 4
-		{xPos + 1.0f,  yPos + -1.0f, zPos + -1.0f,Color._1, Color._2, Color._3,    0.0f, 1.0f},
-		{xPos + -1.0f, yPos + -1.0f, zPos + 1.0f, Color._1, Color._2, Color._3,  1.0f, 0.0f},
-		{xPos + 1.0f, yPos + -1.0f, zPos + 1.0f, Color._1, Color._2, Color._3,  1.0f, 1.0f},
-
-		{xPos + 1.0f, yPos + -1.0f,zPos + -1.0f,Color._1, Color._2, Color._3,    0.0f, 0.0f},    // side 5
-		{xPos + 1.0f, yPos + 1.0f,zPos + -1.0f, Color._1, Color._2, Color._3, 0.0f, 1.0f},
-		{xPos + 1.0f, yPos + -1.0f, zPos + 1.0f,Color._1, Color._2, Color._3,     1.0f, 0.0f},
-		{xPos + 1.0f, yPos + 1.0f,zPos + 1.0f, Color._1, Color._2, Color._3,1.0f, 1.0f},
-
-		{xPos + -1.0f, yPos + -1.0f,zPos + -1.0f,Color._1, Color._2, Color._3,  0.0f, 0.0f},    // side 6
-		{xPos + -1.0f, yPos + -1.0f,zPos + 1.0f,Color._1, Color._2, Color._3,  0.0f, 1.0f},
-		{xPos + -1.0f, yPos + 1.0f,zPos + -1.0f, Color._1, Color._2, Color._3, 1.0f, 0.0f},
-		{xPos + -1.0f, yPos + 1.0f,zPos + 1.0f, Color._1, Color._2, Color._3,1.0f, 1.0f}
-	};
-
-	int length = ARRAYSIZE(OurVertices);
-	for (int j = 0; j < length; ++j)
-		VertexStorage[vertex_count + j] = OurVertices[j];
-
-	int index_position = vertex_count;
-	vertex_count += length;
-
-	// create the vertex buffer
-	D3D11_BUFFER_DESC bd = { 0 };
-	bd.ByteWidth = sizeof(Vertex32Byte) * vertex_count;
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-
-	D3D11_SUBRESOURCE_DATA srd = { VertexStorage, 0, 0 };
-
-	device->CreateBuffer(&bd, &srd, &vertexbuffer);
-
-	// create the index buffer out of shorts
-	short OurIndices[] =
-	{
-		0, 1, 2,    // side 1
-		2, 1, 3,
-		4, 5, 6,    // side 2
-		6, 5, 7,
-		8, 9, 10,    // side 3
-		10, 9, 11,
-		12, 13, 14,    // side 4
-		14, 13, 15,
-		16, 17, 18,    // side 5
-		18, 17, 19,
-		20, 21, 22,    // side 6
-		22, 21, 23,
-	};
-
-	length = ARRAYSIZE(OurIndices);
-	for (int j = 0; j < length; ++j)
-		IndexStorage[index_count + j] = OurIndices[j] + index_position;
-
-	index_count += length;
-
-	// create the index buffer
-	D3D11_BUFFER_DESC ibd = { 0 };
-	ibd.ByteWidth = sizeof(short) * index_count;
-	ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-
-	D3D11_SUBRESOURCE_DATA isrd = { IndexStorage, 0, 0 };
-
-	device->CreateBuffer(&ibd, &isrd, &indexbuffer);
+		verts[++offset] = {
+			object_buffer[i]._X + x, object_buffer[i]._Y + y, object_buffer[i]._Z + z,
+			c._1, c._2, c._3,
+			object_buffer[i]._U, object_buffer[i]._V
+		};
+	}
+	return offset;
 }
+
+

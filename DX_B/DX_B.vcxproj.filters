@@ -26,6 +26,8 @@
     <ClCompile Include="Constants.cpp" />
     <ClCompile Include="XWicLoader.cpp" />
     <ClCompile Include="Animation.cpp" />
+    <ClCompile Include="Landscape.cpp" />
+    <ClCompile Include="ContentOverlay.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -44,6 +46,8 @@
     <ClInclude Include="Constants.h" />
     <ClInclude Include="XWicLoader.h" />
     <ClInclude Include="Animation.h" />
+    <ClInclude Include="Landscape.h" />
+    <ClInclude Include="ContentOverlay.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\0_FONT.PNG">

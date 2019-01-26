@@ -250,13 +250,9 @@ void InitializeDirectXProperties()
 
 	CreatePipeline();
 
-	model_mesh.CreateCubeObject(Engine::device.Get(), 0.0f, 0.0f, 8.0f);
-	model_mesh.CreateCubeObject(Engine::device.Get(), 0.0f, 0.0f, 4.0f);
-	model_mesh.CreateCubeObject(Engine::device.Get(), 0.0f, 0.0f, 0.0f);
-	model_mesh.CreateCubeObject(Engine::device.Get(), 0.0f, 0.0f, -4.0f);
-
 	CameraEngine::ResetPrimaryCameraMatrix();
 
+	ContentLoader::AllocateVertexBuffers();
 	ContentLoader::LoadContentStage(0); //First Content Batch.
 	ContentLoader::PresentWindow(0);    //Show Us The First Screen!!
 
@@ -275,6 +271,12 @@ void Update()
 	{
 		ContentWindow cw = ContentLoader::GetCurrentWindow();
 		cw.update();
+	}
+
+	if (ContentLoader::s_index >= 0)
+	{
+		ContentOverlay co = ContentLoader::GetCurrentOverlay();
+		co.update();
 	}
 
 	//Update 3D Camera World Space Context.
@@ -309,12 +311,7 @@ void Render()
 		Engine::context->VSSetConstantBuffers(0, 1, d3d_const_buffer.GetAddressOf());
 
 		Engine::context->IASetVertexBuffers(0, 1, ContentLoader::static_mesh_buffer.GetAddressOf(), &stride, &offset);
-		Engine::context->Draw(6, 0);
-
-		Engine::context->PSSetShaderResources(0, 1, ContentLoader::GetTextureAddress(1));
-		Engine::context->IASetVertexBuffers(0, 1, model_mesh.vertexbuffer.GetAddressOf(), &stride, &offset);
-		Engine::context->IASetIndexBuffer(model_mesh.indexbuffer.Get(), DXGI_FORMAT_R16_UINT, offset);
-		Engine::context->DrawIndexed(36 * 4, 0, 0);
+		Engine::context->Draw(ContentLoader::static_mesh_buffer_size, 0);
 	}
 
 	//Draw 2D.
@@ -333,7 +330,7 @@ void Render()
 		if (cw.background_shader_id >= 0)
 		{
 			//CODE SECITON #1
-			Engine::context->PSGetShaderResources(0, 1, ContentLoader::GetTextureAddress(cw.background_shader_id));
+			Engine::context->PSSetShaderResources(0, 1, ContentLoader::GetTextureAddress(cw.background_shader_id));
 			Engine::context->Draw(6, 0);
 		}
 		for (int i = 0; i < cw.state_changes; ++i)
@@ -344,11 +341,19 @@ void Render()
 			);
 			Engine::context->Draw(cw.state_vertex_sizes[i], cw.state_vertex_offsets[i]);
 		}
+	}
 
-		//CODE SECITON #3
-		//Engine::context->IASetVertexBuffers(0, 1, ContentLoader::dynamic_interfaces_buffer.GetAddressOf(), &stride, &offset);
-		//Engine::context->PSSetShaderResources(0, 1, ContentLoader::GetTextureAddress(3));
-		//Engine::context->Draw(ContentLoader::dynamic_interface_buffer_size, 0);
+	if (ContentLoader::s_index >= 0)
+	{
+		Engine::context->OMSetDepthStencilState(depthoffstate.Get(), 0);
+		Engine::context->VSSetConstantBuffers(0, 1, d2d_const_buffer.GetAddressOf());
+
+		float BlendFactor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		Engine::context->OMSetBlendState(blendstate.Get(), BlendFactor, 0xFFFFFFFF);
+
+		Engine::context->IASetVertexBuffers(0, 1, ContentLoader::static_overlay_buffer.GetAddressOf(), &stride, &offset);
+		Engine::context->PSSetShaderResources(0, 1, ContentLoader::GetTextureAddress(2));
+		Engine::context->Draw(ContentLoader::static_overlay_buffer_size, 0);
 	}
 
 	swapchain->Present(VSYNC_ON, 0);

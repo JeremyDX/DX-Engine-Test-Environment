@@ -4,6 +4,7 @@
 #include "GameTime.h"
 #include "Animation.h"
 #include "ScreenManager.h"
+#include "ContentLoader.h"
 
 using namespace DirectX;
 
@@ -55,14 +56,16 @@ void BuildPrimaryCameraMatrix()
 	camera_matrix._23 = -right._2;
 	camera_matrix._33 = forward._3 * up._2;
 
+	float height = position._2 + 2.0f;
+
 	//Dot Product (Position, Right Vector).
-	camera_matrix._41 = -(position._1 * camera_matrix._11 + position._2 * camera_matrix._21 + position._3 * camera_matrix._31);
+	camera_matrix._41 = -(position._1 * camera_matrix._11 + height * camera_matrix._21 + position._3 * camera_matrix._31);
 
 	//Dot Product (Position, Up Vector).
-	camera_matrix._42 = -(position._1 * camera_matrix._12 + position._2 * camera_matrix._22 + position._3 * camera_matrix._32);
+	camera_matrix._42 = -(position._1 * camera_matrix._12 + height * camera_matrix._22 + position._3 * camera_matrix._32);
 
 	//Dot Product (Position, Forward Vector).
-	camera_matrix._43 = -(position._1 * camera_matrix._13 + position._2 * camera_matrix._23 + position._3 * camera_matrix._33);
+	camera_matrix._43 = -(position._1 * camera_matrix._13 + height * camera_matrix._23 + position._3 * camera_matrix._33);
 }
 
 void CreateFinalMatrixResult()
@@ -73,9 +76,9 @@ void CreateFinalMatrixResult()
 
 void CameraEngine::ResetPrimaryCameraMatrix()
 {
-	position._1 = 0.0F;
-	position._2 = 1.1F;
-	position._3 = 0.0F;
+	position._1 = 0.5F;
+	position._2 = 0.0F;
+	position._3 = 0.5F;
 
 	rotation_data._1 = 0;
 	rotation_data._2 = 0;
@@ -128,13 +131,16 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 	signed short turn_strength = loaded_pad.sThumbRX; //Turn Left Right Joystick.
 	signed short look_strength = loaded_pad.sThumbRY; //Look Up Down Joystick.
 
+	unsigned int abs_turn = turn_strength * turn_strength;
+	unsigned int abs_look = look_strength * look_strength;
+
 	unsigned int abs_forward = forward_strength * forward_strength;
 	unsigned int abs_right = right_strength * right_strength;
 	unsigned int dead_zone = 6400 * 6400; //Should be about at least 20% of joystick needs to be pressed. 
 
 	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::LEFT_STICK_CLICK))
 	{
-		sprinting = true;
+		sprinting = !sprinting; //Reverse Sprint State.
 	}
 
 	if (sprinting)
@@ -152,9 +158,9 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		if (change > 49)
 		{
 			throttled_jump = change < ref.Length + 6;
-			forced_animation_index = throttled_jump ? current_frame - 20 : current_frame;
+			forced_animation_index = (throttled_jump || sprinting) ? current_frame - 20 : current_frame;
 			base_animation_position._1 = position._1;
-			base_animation_position._2 = 1.1F;
+			base_animation_position._2 = 0.0f;
 			base_animation_position._3 = position._3;
 			animation_move_strength._1 = abs_right > dead_zone ? right_strength : 0;
 			animation_move_strength._2 = abs_forward > dead_zone ? forward_strength : 0;
@@ -220,9 +226,6 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		}
 	}
 
-	unsigned int abs_turn = turn_strength * turn_strength;
-	unsigned int abs_look = look_strength * look_strength;
-
 	//If the player did in fact turn updated the camera movement vectors. 
 	if (abs_turn > dead_zone)
 	{
@@ -279,21 +282,33 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		updated = true;
 	}
 
-	if (!isBlocking && abs_forward > dead_zone)
+	if (!isBlocking)
 	{
-		float strength = (float)(forward_strength * (long)GameTime::DeltaTime_Frames()) / 600000L;
-		position._1 += strength * forward._1;
-		position._3 += strength * forward._3;
-		updated = true;
+		if (abs_forward > dead_zone)
+		{
+			float strength = (float)(forward_strength * (long)GameTime::DeltaTime_Frames()) / 600000L;
+			position._1 += strength * forward._1;
+			position._3 += strength * forward._3;
+			updated = true;
+		}
+
+		if (abs_right > dead_zone)
+		{
+			float strength = (float)(right_strength * (long)GameTime::DeltaTime_Frames()) / 600000L;
+			position._1 += strength * right._1;
+			position._3 += strength * right._3;
+			updated = true;
+		}
 	}
 
-	if (!isBlocking && abs_right > dead_zone)
-	{
-		float strength = (float)(right_strength * (long)GameTime::DeltaTime_Frames()) / 600000L;
-		position._1 += strength * right._1;
-		position._3 += strength * right._3;
-		updated = true;
-	}
+	if (position._1 < 0.5f)
+		position._1 = 0.5f;
+	else if (position._1 > 95.5f)
+		position._1 = 95.5f;
+	if (position._3 < 0.5f)
+		position._3 = 0.5f;
+	else if (position._3 > 95.5f)
+		position._3 = 95.5f;
 
 	if (updated)
 	{
@@ -302,4 +317,18 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 	}
 
 	return updated;
+}
+
+void CameraEngine::CreateDebugOverlay()
+{
+	char buffer[12];
+
+	snprintf(buffer, 12, "%f", position._1);
+	ContentLoader::UpdateOverlayString(12 * 6, buffer, 12 * 6);
+
+	snprintf(buffer, 12, "%f", position._2);
+	ContentLoader::UpdateOverlayString(36 * 6, buffer, 12 * 6);
+
+	snprintf(buffer, 12, "%f", position._3);
+	ContentLoader::UpdateOverlayString(60 * 6, buffer, 12 * 6);
 }
