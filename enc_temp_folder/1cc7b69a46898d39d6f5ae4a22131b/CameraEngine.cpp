@@ -253,6 +253,11 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		int f = (int)value / 90;
 		rotation = value;
 		
+
+		//Q0 = Q0
+		//Q1 = Q2
+		//Q2 = Q1
+		//Q3 = Q3;
 		float R, R2;
 		if (f == 0 || f == 1)
 		{
