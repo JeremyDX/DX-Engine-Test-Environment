@@ -39,7 +39,8 @@ Int2 rotation_data;
 //Primary Camera Matrix.
 XMFLOAT4X4 camera_matrix;
 
-Float3 blocking_value[4];
+Float2 blocking_value[4];
+float rotation;
 
 int forced_animation_index = 0;
 Float4 anim_move_vectors = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -52,8 +53,8 @@ int HORIZONTAL_SPEED = 4;
 int VERTICAL_SPEED = 4;
 
 int face_quadrant = 0;
-int move_quadrant = 0;
-int move_direction = 0;
+int collided_side_check = 0;
+int my_side_check = 0;
 int blocking_quadrant = 0;
 
 
@@ -250,53 +251,56 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		double PI = 3.14159265;
 
 		int f = (int)value / 90;
-		blocking_value[0]._3 = value;
+		rotation = value;
+
+		float R = (value - (f * 90.0f)) / 90.0f;
+		float R2 = 1.0F - R;
 		
+		float H1 = R * 0.125F;
+		float H2 = R2 * 0.125F;
+		float W1 = R * 0.21875F;
+		float W2 = R2 * 0.21875F;
+
 		if (f == 0)
 		{
-			float R = (value - 0.0f) / 90.0f;
-			float R2 = 1.0F - R;
-			blocking_value[0]._1 = R2 * -0.21875F +  R *  0.125F;
-			blocking_value[0]._2 = R  *  0.21875F - R2 * -0.125F;
+			blocking_value[0]._1 = -W2 + H1;
+			blocking_value[0]._2 =  W1 + H2;
 
-			blocking_value[1]._1 = R2 * 0.21875F - R * -0.125F;
-			blocking_value[1]._2 = R * -0.21875F + R2 * 0.125F;
+			blocking_value[1]._1 =  W2 + H1;
+			blocking_value[1]._2 = -W1 + H2;
 		}
 		else if (f == 1)
 		{
-			float R = (value - 90.0f) / 90.0f;
-			float R2 = 1.0F - R;
-			blocking_value[0]._1 = R *  0.21875F - R2 * -0.125F;
-			blocking_value[0]._2 = R2 * 0.21875F + R *  -0.125F;
+			blocking_value[0]._1 =  W1 + H2;
+			blocking_value[0]._2 =  W2 - H1;
 
-			blocking_value[1]._1 = R * -0.21875F + R2 * 0.125F;
-			blocking_value[1]._2 = R2 * -0.21875F - R * 0.125F;
+			blocking_value[1]._1 = -W1 + H2;
+			blocking_value[1]._2 = -W2 - H1;
 		}
 		else if (f == 2)
 		{
-			float R = (value - 180.0f) / 90.0f;
-			float R2 = 1.0F - R;
-			float A = R * 0.125F;
-			float B = R * 0.21875F;
-			float C = R2 * 0.125F;
-			float D = R2 * 0.21875F;
+			blocking_value[0]._1 =  W2 - H1;
+			blocking_value[0]._2 = -W1 - H2;
 
-			blocking_value[0]._1 = R2 * 0.21875F + R * -0.125F;
-			blocking_value[0]._2 = R * -0.21875F - R2 * 0.125F;
-
-			blocking_value[1]._1 = R2 * -0.21875F - R * 0.125F;
-			blocking_value[1]._2 = R *  0.21875F + R2 * -0.125F;
+			blocking_value[1]._1 = -W2 - H1;
+			blocking_value[1]._2 =  W1 - H2;
 		}
 		else if (f == 3)
 		{
-			float R = (value - 270.0f) / 90.0f;
-			float R2 = 1.0F - R;
-			blocking_value[0]._1 =  R * -0.21875F - R2 * 0.125F;
-			blocking_value[0]._2 = R2 * -0.21875F + R * 0.125F;
+			blocking_value[0]._1 = -W1 - H2;
+			blocking_value[0]._2 = -W2 + H1;
 
-			blocking_value[1]._1 = R *  0.21875F + R2 * -0.125F;
-			blocking_value[1]._2 = R2 *  0.21875F - R * -0.125F;
+			blocking_value[1]._1 =  W1 - H2;
+			blocking_value[1]._2 =  W2 + H1;
 		}
+
+		blocking_value[2]._1 = -blocking_value[0]._1;
+		blocking_value[2]._2 = -blocking_value[0]._2;
+
+		blocking_value[3]._1 = -blocking_value[1]._1;
+		blocking_value[3]._2 = -blocking_value[1]._2;
+
+		ContentLoader::RotateOverlayTexture(900, blocking_value);
 
 		forward._1 = (float)sin(value * PI / 180);
 		forward._3 = (float)cos(value * PI / 180);
@@ -342,13 +346,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 	if (!isBlocking)
 	{
-		int move_x = 1;
-		int move_z = 3;
-
 		Float2 verify = { 0.0f, 0.0f };
-
-		bool mov_z = false;
-		bool mov_x = false;
 
 		if (abs_forward > dead_zone)
 		{
@@ -364,37 +362,37 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 			verify._2 += strength * right._3;
 		}
 		
-		move_quadrant = 4;
+		collided_side_check = 4;
 
 		if (verify._1 > 0.0f)
-			++move_quadrant;
+			++collided_side_check;
 		else if (verify._1 < 0.0f)
-			--move_quadrant;
+			--collided_side_check;
 
 		if (verify._2 > 0.0f)
-			move_quadrant -= 3;
+			collided_side_check -= 3;
 		else if (verify._2 < 0.0f)
-			move_quadrant += 3;
+			collided_side_check += 3;
 
-		if (move_quadrant != 4)
+		if (collided_side_check != 4)
 		{
 			updated = true;
 
-			move_direction = 4;
+			my_side_check = 4;
 			
 			if (abs_forward > dead_zone)
 			{
 				if (forward_strength > 0)
-					move_direction -= 3;
+					my_side_check -= 3;
 				else
-					move_direction += 3;
+					my_side_check += 3;
 			}
 			if (abs_right > dead_zone)
 			{
 				if (right_strength > 0)
-					++move_direction;
+					++my_side_check;
 				else
-					--move_direction;
+					--my_side_check;
 			}
 		}
 
@@ -433,12 +431,12 @@ void CameraEngine::CreateDebugOverlay()
 	snprintf(buffer, 12, "%f", position._3);
 	ContentLoader::UpdateOverlayString(63 * 6, buffer, 12 * 6);
 
-	snprintf(buffer, 12, "%f", blocking_value[1]._1);
+	snprintf(buffer, 12, "%f", blocking_value[2]._1);
 	ContentLoader::UpdateOverlayString(89 * 6, buffer, 12 * 6);
 
-	snprintf(buffer, 12, "%f", blocking_value[1]._2);
+	snprintf(buffer, 12, "%f", blocking_value[2]._2);
 	ContentLoader::UpdateOverlayString(115 * 6, buffer, 12 * 6);
 
-	snprintf(buffer, 12, "%f", blocking_value[0]._3);
+	snprintf(buffer, 12, "%f", rotation);
 	ContentLoader::UpdateOverlayString(138 * 6, buffer, 12 * 6);
 }

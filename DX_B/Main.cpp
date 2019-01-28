@@ -17,7 +17,7 @@ ref class Main sealed : public IFrameworkView
 
 		virtual void Run()
 		{
-			const int CRASH_ERROR_CODE = Engine::Boot(1080, 1920);
+			const int CRASH_ERROR_CODE = Engine::Boot(1080, 1080);
 			{
 				//UNSUPPORTED PROCESS.
 			};
