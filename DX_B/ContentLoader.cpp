@@ -133,8 +133,7 @@ void ContentLoader::LoadWorldStage()
 
 	overlays[0].SetUpdateProc(2);
 
-	Float3 Color = { 0.1f, 0.1f, 0.1f };
-	Float3 C = { 1.0f, 1.0f, 1.0f };
+	Float3 Color = { 0.02f, 0.1f, 0.02f };
 
 	float
 		xPos =   -96.0f,
@@ -157,7 +156,7 @@ void ContentLoader::LoadWorldStage()
 		SIZE =   96.0f,
 		SIZE_2 = 96.0f;
 
-		Color._1 = 0.4f, Color._2 = 0.4f, Color._3 = 1.0f;
+		Color._1 = 0.4f, Color._2 = 0.1f, Color._3 = 0.1f;
 
 	 MeshVerts[6] = { xPos			, yPos , zPos			, Color._1, Color._2, Color._3,	  0.0f,   0.0f };
 	 MeshVerts[7] = { xPos			, yPos , zPos + SIZE	, Color._1, Color._2, Color._3,   0.0f,   SIZE_2 };
@@ -190,9 +189,12 @@ void ContentLoader::LoadWorldStage()
 
 	static_overlay_buffer_size = 0;
 
-	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Postion X : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 20, 0);
-	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Postion Y : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 60, 0);
-	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Postion Z : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 100, 0);
+	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Position X : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 20, 0);
+	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Position Y : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 60, 0);
+	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Position Z : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 100, 0);
+	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"UpperLeft X : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 140, 0);
+	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"UpperLeft Z : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 180, 0);
+	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Rotation : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 220, 0);
 
 	ZeroMemory(&resource, sizeof(D3D11_MAPPED_SUBRESOURCE));
 	Engine::context->Map(static_overlay_buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &resource);

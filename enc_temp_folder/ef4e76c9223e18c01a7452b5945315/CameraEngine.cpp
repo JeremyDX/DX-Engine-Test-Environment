@@ -276,10 +276,6 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		{
 			float R = (value - 180.0f) / 90.0f;
 			float R2 = 1.0F - R;
-			float A = R * 0.125F;
-			float B = R * 0.21875F;
-			float C = R2 * 0.125F;
-			float D = R2 * 0.21875F;
 
 			blocking_value[0]._1 = R2 * 0.21875F + R * -0.125F;
 			blocking_value[0]._2 = R * -0.21875F - R2 * 0.125F;
