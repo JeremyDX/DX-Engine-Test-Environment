@@ -254,7 +254,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		rotation = value;
 		
 		float R, R2;
-		if (f == 0 || f == 1)
+		if (f < 2)
 		{
 			R = forward._1;
 			R2 = forward._3;
@@ -269,32 +269,14 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		float W1 = R * 0.21875F;
 		float W2 = R2 * 0.21875F;
 
-		if (f == 0)
+		if (f < 2)
 		{
 			blocking_value[0]._1 = -W2 + H1;
 			blocking_value[0]._2 =  W1 + H2;
 
 			blocking_value[1]._1 =  W2 + H1;
 			blocking_value[1]._2 = -W1 + H2;
-		}
-		else if (f == 1)
-		{
-			blocking_value[0]._1 = -W2 + H1;
-			blocking_value[0]._2 =  W1 + H2;
-
-			blocking_value[1]._1 =  W2 + H1;
-			blocking_value[1]._2 = -W1 + H2;
-		}
-		else if (f == 2)
-		{
-			blocking_value[0]._1 = -W1 - H2;
-			blocking_value[0]._2 = -W2 + H1;
-
-			blocking_value[1]._1 =  W1 - H2;
-			blocking_value[1]._2 =  W2 + H1;
-		}
-		else if (f == 3)
-		{
+		} else {
 			blocking_value[0]._1 = -W1 - H2;
 			blocking_value[0]._2 = -W2 + H1;
 
