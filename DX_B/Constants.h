@@ -15,6 +15,21 @@ struct Float4
 	float _1, _2, _3, _4;
 };
 
+struct Byte2
+{
+	int8_t _1, _2;
+};
+
+struct Byte3
+{
+	int8_t _1, _2, _3;
+};
+
+struct Byte4
+{
+	int8_t _1, _2, _3, _4;
+};
+
 struct Short2
 {
 	int16_t _1, _2;

@@ -5,30 +5,19 @@
 #include "Animation.h"
 #include "ScreenManager.h"
 #include "ContentLoader.h"
+#include "XModelMesh.h"
 
 using namespace DirectX;
 
 const static float HALF_DEGREE_AS_RADIAN = 0.0087266462599;
 
-void CreateProjectionMatrix(XMFLOAT4X4 & matrix, float angle, float znear, float zfar)
-{
-	ZeroMemory(&matrix, sizeof(XMFLOAT4X4));
-
-	float aspect = ScreenManager::ASPECT_RATIO;
-
-	matrix._22 = 1.0f / tan(HALF_DEGREE_AS_RADIAN * angle);
-	matrix._11 = matrix._22 / aspect;
-	matrix._33 = zfar / (zfar - znear);
-	matrix._34 = 1.0F;
-	matrix._43 = -znear * zfar / (zfar - znear);
-}
-
 XMFLOAT4X4 CameraEngine::final_result;
 
 //Primary Camera Sub Components.
-Float3 up;
-Float3 forward;
-Float3 right;
+Float2 up;
+Float2 forward;
+Float2 right;
+Byte2 quadrants;
 
 //Player Position In World Space.
 Float3 position;
@@ -40,7 +29,6 @@ Int2 rotation_data;
 XMFLOAT4X4 camera_matrix;
 
 Float2 blocking_value[4];
-float rotation;
 
 int forced_animation_index = 0;
 Float4 anim_move_vectors = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -49,47 +37,12 @@ Int2 animation_move_strength = { 0, 0 };
 bool throttled_jump = false;
 bool sprinting = false;
 
-int HORIZONTAL_SPEED = 4;
-int VERTICAL_SPEED = 4;
-
-int face_quadrant = 0;
-int collided_side_check = 0;
-int my_side_check = 0;
-int blocking_quadrant = 0;
-
-
-void BuildPrimaryCameraMatrix()
-{
-	//Right Vector.
-	camera_matrix._11 = right._1;
-	camera_matrix._21 = 0.0F;
-	camera_matrix._31 = right._3;
-
-	//Up Vector.
-	camera_matrix._12 = right._2 * forward._1;
-	camera_matrix._22 = up._2;
-	camera_matrix._32 = right._2 * forward._3;
-
-	//Forward Vector.
-	camera_matrix._13 = forward._1 * up._2;
-	camera_matrix._23 = -right._2;
-	camera_matrix._33 = forward._3 * up._2;
-
-	float height = position._2 + 2.0f;
-
-	//Dot Product (Position, Right Vector).
-	camera_matrix._41 = -(position._1 * camera_matrix._11 + height * camera_matrix._21 + position._3 * camera_matrix._31);
-
-	//Dot Product (Position, Up Vector).
-	camera_matrix._42 = -(position._1 * camera_matrix._12 + height * camera_matrix._22 + position._3 * camera_matrix._32);
-
-	//Dot Product (Position, Forward Vector).
-	camera_matrix._43 = -(position._1 * camera_matrix._13 + height * camera_matrix._23 + position._3 * camera_matrix._33);
-}
+int HORIZONTAL_SPEED = 1;
+int VERTICAL_SPEED = 2;
 
 void CreateFinalMatrixResult()
 {
-	static const XMMATRIX PROJECTION_MATRIX = XMMatrixPerspectiveFovLH(XMConvertToRadians(45), ScreenManager::ASPECT_RATIO, 1, 1000);
+	static const XMMATRIX PROJECTION_MATRIX = XMMatrixPerspectiveFovLH(XMConvertToRadians(45), ScreenManager::ASPECT_RATIO, 0.01F, 300.0F);
 	DirectX::XMStoreFloat4x4(&CameraEngine::final_result, DirectX::XMLoadFloat4x4(&camera_matrix) * PROJECTION_MATRIX);
 }
 
@@ -102,17 +55,17 @@ void CameraEngine::ResetPrimaryCameraMatrix()
 	rotation_data._1 = 0;
 	rotation_data._2 = 0;
 
-	forward._1 = 0.0f;
-	forward._2 = 0.0f;
-	forward._3 = 1.0f;
-
 	right._1 = 1.0f;
 	right._2 = 0.0f;
-	right._3 = 0.0f;
 
 	up._1 = 0.0f;
 	up._2 = 1.0f;
-	up._3 = 0.0f;
+
+	forward._1 = 0.0f;
+	forward._2 = 1.0f;
+
+	quadrants._1 = 0;
+	quadrants._2 = 0;
 
 	BuildPrimaryCameraMatrix();
 
@@ -125,8 +78,45 @@ void CameraEngine::ResetPrimaryCameraMatrix()
 	CreateFinalMatrixResult();
 }
 
+void CameraEngine::BuildPrimaryCameraMatrix()
+{
+	//Right Vector.
+	camera_matrix._11 = right._1; //Sin(Turn)
+	camera_matrix._21 = 0.0F;     //Always Flat at 0.0F.
+	camera_matrix._31 = right._2; //Cos(Turn)
+
+	//Up Vector.
+	camera_matrix._12 = up._1 * forward._1;   //Sin(Look) * Sin(Turn)
+	camera_matrix._22 = up._2;                //Cos(Look)
+	camera_matrix._32 = up._1 * forward._2;   //Sin(Look) * Cos(Turn)
+
+	//Forward Vector.
+	camera_matrix._13 =  up._2 * forward._1; //Cos(Look) * Sin(Turn)
+	camera_matrix._23 = -up._1;              //Inverse of Sin(Look)
+	camera_matrix._33 =  up._2 * forward._2; //Cos(Look) * Cos(Turn)
+
+
+	float xoffset = (position._1);
+	float zoffset = (position._3);
+
+	float height = (position._2 + 1.8F);
+
+	//Dot Product (Position, Right Vector).
+	camera_matrix._41 = -(xoffset * camera_matrix._11 + height * camera_matrix._21 + zoffset * camera_matrix._31);
+
+	//Dot Product (Position, Up Vector).
+	camera_matrix._42 = -(xoffset* camera_matrix._12 + height * camera_matrix._22 + zoffset * camera_matrix._32);
+
+	//Dot Product (Position, Forward Vector).
+	camera_matrix._43 = -(xoffset * camera_matrix._13 + height * camera_matrix._23 + zoffset * camera_matrix._33);
+}
+
 bool CameraEngine::PrimaryCameraUpdatedLookAt()
 {
+	//This is to ensure we only perform 1 frame of data, in event we are running too quick it won't do anything.
+	//But if we stall then we stop updating and we don't "skip" frames to catch up. it's SOL if you lag.
+	bool delta_frame = GameTime::DeltaTime_Frames() > 0;
+
 	int64_t current_frame = GameTime::AbsoluteFrameTicks();
 	Animation &ref = Animation::GetAnimation(2);
 
@@ -179,9 +169,9 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 				animation_move_strength._2 /= 2;
 			}
 			anim_move_vectors._1 = right._1;
-			anim_move_vectors._2 = right._3;
+			anim_move_vectors._2 = right._2;
 			anim_move_vectors._3 = forward._1;
-			anim_move_vectors._4 = forward._3;
+			anim_move_vectors._4 = forward._2;
 			sprinting = false;
 		}
 	}
@@ -235,101 +225,45 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		}
 	}
 
-	//If the player did in fact turn updated the camera movement vectors. 
+	//If the player did in fact turn update the camera movement vectors. 
 	if (abs_turn > dead_zone)
 	{
-		rotation_data._2 += (turn_strength * (long)GameTime::DeltaTime_Frames() * HORIZONTAL_SPEED);
-		//rotation.y = 32768 * 10;
+		rotation_data._2 += (turn_strength * delta_frame * HORIZONTAL_SPEED);
 
-		//0xB40000 = 360 * 32768 in hex form.
 		if (rotation_data._2 < 0)
-			rotation_data._2 += 0xB40000;
-		if (rotation_data._2 >= 0xB40000)
-			rotation_data._2 -= 0xB40000;
+			rotation_data._2 += 0xAFC800;
+		if (rotation_data._2 >= 0xAFC800)
+			rotation_data._2 -= 0xAFC800;
 
-		float value = rotation_data._2 / 32768.0F;
+		int value = rotation_data._2 / 320;
 		double PI = 3.14159265;
 
-		int f = (int)value / 90;
-		rotation = value;
-		
-		float R, R2;
-		if (f < 2)
-		{
-			R = forward._1;
-			R2 = forward._3;
-		}
-		else {
-			R = right._1;
-			R2 = right._3;
-		}
+		forward._1 = (float)sin((value * PI) / 18000);
+		forward._2 = (float)cos((value * PI) / 18000);
 
-		float H1 = R * 0.125F;
-		float H2 = R2 * 0.125F;
-		float W1 = R * 0.21875F;
-		float W2 = R2 * 0.21875F;
-
-		if (f < 2)
-		{
-			blocking_value[0]._1 = -W2 + H1;
-			blocking_value[0]._2 =  W1 + H2;
-
-			blocking_value[1]._1 =  W2 + H1;
-			blocking_value[1]._2 = -W1 + H2;
-		} else {
-			blocking_value[0]._1 = -W1 - H2;
-			blocking_value[0]._2 = -W2 + H1;
-
-			blocking_value[1]._1 =  W1 - H2;
-			blocking_value[1]._2 =  W2 + H1;
-		}
-
-		blocking_value[2]._1 = -blocking_value[0]._1;
-		blocking_value[2]._2 = -blocking_value[0]._2;
-
-		blocking_value[3]._1 = -blocking_value[1]._1;
-		blocking_value[3]._2 = -blocking_value[1]._2;
-
-		ContentLoader::RotateOverlayTexture(900, blocking_value);
-
-		forward._1 = (float)sin(value * PI / 180);
-		forward._3 = (float)cos(value * PI / 180);
-
-		int var = (rotation_data._2 + 0x2D0000);
-		if (var >= 0xB40000)
-			var -= 0xB40000;
-
-		value = var / 32768.0F;
-
-		right._1 = (float)sin(value * PI / 180);  //Right Vector X without Up Vector.
-		right._3 = (float)cos(value * PI / 180);  //Right Vector Z without Up Vector.
+		right._1 = (float)sin(((value + 9000) * PI) / 18000);
+		right._2 = (float)cos(((value + 9000) * PI) / 18000);
 
 		updated = true;
 	}
 
 	if (abs_look > dead_zone)
 	{
-		rotation_data._1 -= (look_strength * (long)GameTime::DeltaTime_Frames() * VERTICAL_SPEED);
-		//rotation_data.x = 32768 * 10;
+		const int RANGE = 65 * 32000;
 
-		//0x230000 = Hex version of 70.0.
-		//We force the Look rotation to a range of -70 degrees and 70 degrees.
-		if (rotation_data._1 < -0x230000)
-			rotation_data._1 = -0x230000;
-		if (rotation_data._1 > 0x230000)
-			rotation_data._1 = 0x230000;
+		rotation_data._1 -= (look_strength * delta_frame * VERTICAL_SPEED);
 
-		signed int camera_rotation = rotation_data._1;
+		if (rotation_data._1 < -RANGE)
+			rotation_data._1 = -RANGE;
+		if (rotation_data._1 > RANGE)
+			rotation_data._1 = RANGE;
+		
 		double PI = 3.14159265;
 
-		//Now we have a postive value between 0-70 (positive) or 290-359 (negative). 
-		if (camera_rotation < 0)
-			camera_rotation += 0xB40000;
+		int value = rotation_data._1 / 320;
 
-		float value = camera_rotation / 32768.0F;
-
-		right._2 = (float)sin(value * PI / 180);
-		up._2 = (float)cos(value * PI / 180);
+		up._1 = (float)sin((value * PI) / 18000);
+		up._2 = (float)cos((value * PI) / 18000);
 
 		updated = true;
 	}
@@ -340,54 +274,24 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 		if (abs_forward > dead_zone)
 		{
-			float strength = (float)(forward_strength * (long)GameTime::DeltaTime_Frames()) / 600000L;
-			verify._1 += strength * forward._1;
-			verify._2 += strength * forward._3;
+			float strength = (float)(forward_strength * delta_frame) / 600000L;
+			verify._1 += strength * forward._1; //SinX
+			verify._2 += strength * forward._2; //CosZ
 		}
 
 		if (abs_right > dead_zone)
 		{
-			float strength = (float)(right_strength * (long)GameTime::DeltaTime_Frames()) / 600000L;
-			verify._1 += strength * right._1;
-			verify._2 += strength * right._3;
-		}
-		
-		collided_side_check = 4;
-
-		if (verify._1 > 0.0f)
-			++collided_side_check;
-		else if (verify._1 < 0.0f)
-			--collided_side_check;
-
-		if (verify._2 > 0.0f)
-			collided_side_check -= 3;
-		else if (verify._2 < 0.0f)
-			collided_side_check += 3;
-
-		if (collided_side_check != 4)
-		{
-			updated = true;
-
-			my_side_check = 4;
-			
-			if (abs_forward > dead_zone)
-			{
-				if (forward_strength > 0)
-					my_side_check -= 3;
-				else
-					my_side_check += 3;
-			}
-			if (abs_right > dead_zone)
-			{
-				if (right_strength > 0)
-					++my_side_check;
-				else
-					--my_side_check;
-			}
+			float strength = (float)(right_strength * delta_frame) / 600000L;
+			verify._1 += strength * right._1; //SinX
+			verify._2 += strength * right._2; //CosZ
 		}
 
 		position._1 += verify._1;
 		position._3 += verify._2;
+
+		updated = true;
+
+		//XModelMesh::GetCurrentCollidorIndex(position);
 	}
 
 	if (position._1 < 0.5f)
@@ -427,6 +331,22 @@ void CameraEngine::CreateDebugOverlay()
 	snprintf(buffer, 12, "%f", blocking_value[2]._2);
 	ContentLoader::UpdateOverlayString(115 * 6, buffer, 12 * 6);
 
-	snprintf(buffer, 12, "%f", rotation);
+	snprintf(buffer, 12, "%f", 0.0F);
 	ContentLoader::UpdateOverlayString(138 * 6, buffer, 12 * 6);
+}
+
+/*
+* This is unused but shows the process to creating the projection matrix and setting matrix data accordingly.
+*/
+void CreateProjectionMatrix(XMFLOAT4X4 & matrix, float angle, float znear, float zfar)
+{
+	ZeroMemory(&matrix, sizeof(XMFLOAT4X4));
+
+	float aspect = ScreenManager::ASPECT_RATIO;
+
+	matrix._22 = 1.0f / tan(HALF_DEGREE_AS_RADIAN * angle);
+	matrix._11 = matrix._22 / aspect;
+	matrix._33 = zfar / (zfar - znear);
+	matrix._34 = 1.0F;
+	matrix._43 = -znear * zfar / (zfar - znear);
 }

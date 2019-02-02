@@ -8,6 +8,8 @@
 class ContentLoader
 {
 	public:
+		static const float CreateShaderColor(const float brightness, const float alpha);
+		static void WritePixelsToShaderIndex(uint32_t * data, int width, int height, int index);
 		static void PresentWindow(int index);
 		static void ClearWindow();
 		static void PresentOverlay(int index);
@@ -18,7 +20,7 @@ class ContentLoader
 
 		static ID3D11ShaderResourceView** GetTextureAddress(int index);
 
-		static void RotateOverlayTexture(int begin, Float2 * verts);
+		static void RotateOverlayTexture(int begin, Float2 verts[4]);
 		static void SwapQuadsPosition(int offset_a, int offset_b);
 		static void UpdateOverlayString(int begin, const char * text, int zeroing_size);
 		static void SendUpdatedBufferToGpu();

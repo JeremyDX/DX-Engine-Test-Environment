@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "FontResource.h"
-
+#include "ContentLoader.h"
 #include "ScreenManager.h"
 
 //This is hard coded until we can get a Cache file and Process Reading From That...
@@ -115,7 +115,7 @@ int32_t FontResource::UpdateBufferString(int vert_offset, const char *text, stat
 	float offsetX = (1.0f + (verts[vert_offset]._X)) * (view_width / 2);
 	float offsetY = (1.0f - (verts[vert_offset]._Y));
 
-	Float3 color = { 1.0f, 1.0f, 1.0f };
+	Float3 color = { ContentLoader::CreateShaderColor(1.0f, 0.5f), 1.0f, 1.0f };
 
 	for (int n = 0; n < length; ++n)
 	{

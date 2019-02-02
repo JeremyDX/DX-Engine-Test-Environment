@@ -351,9 +351,18 @@ void Render()
 		float BlendFactor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		Engine::context->OMSetBlendState(blendstate.Get(), BlendFactor, 0xFFFFFFFF);
 
+		ContentOverlay co = ContentLoader::GetCurrentOverlay();
+
 		Engine::context->IASetVertexBuffers(0, 1, ContentLoader::static_overlay_buffer.GetAddressOf(), &stride, &offset);
-		Engine::context->PSSetShaderResources(0, 1, ContentLoader::GetTextureAddress(2));
-		Engine::context->Draw(ContentLoader::static_overlay_buffer_size, 0);
+
+		Engine::context->PSSetShaderResources(0, 1, ContentLoader::GetTextureAddress(co.texture_index[0]));
+		Engine::context->Draw(co.offsets[0], 0);
+
+		for (int i = 1; i < co.total_textures; ++i)
+		{
+			Engine::context->PSSetShaderResources(0, 1, ContentLoader::GetTextureAddress(co.texture_index[i]));
+			Engine::context->Draw(co.offsets[i], co.offsets[i - 1]);
+		}
 	}
 
 	swapchain->Present(VSYNC_ON, 0);

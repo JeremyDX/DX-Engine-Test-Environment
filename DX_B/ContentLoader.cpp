@@ -27,6 +27,40 @@ Vertex32Byte MeshVerts[32768];
 Vertex32Byte InterfaceVerts[4096];
 Vertex32Byte OverlayVerts[2000];
 
+const float ContentLoader::CreateShaderColor(const float brightness, const float alpha)
+{
+	const int a = (int)(brightness * 255);
+	const int b = (int)(alpha * 255);
+	return (float)((a << 8) | b);
+}
+
+void ContentLoader::WritePixelsToShaderIndex(uint32_t *data, int width, int height, int index)
+{
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width = width;
+	desc.Height = height;
+	desc.MipLevels = 1;
+	desc.ArraySize = 1;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	desc.CPUAccessFlags = 0;
+	desc.MiscFlags = 0;
+
+	D3D11_SUBRESOURCE_DATA initData;
+	initData.pSysMem = data;
+	initData.SysMemPitch = width * 4;
+	initData.SysMemSlicePitch = width * height * 4;
+
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> tex;
+
+	Engine::device->CreateTexture2D(&desc, &initData, tex.GetAddressOf());
+
+	Engine::device->CreateShaderResourceView(tex.Get(), NULL, ContentLoader::GetTextureAddress(index));
+}
+
 void ContentLoader::PresentWindow(int index)
 {
 	m_index = index;
@@ -123,6 +157,18 @@ void ContentLoader::LoadWorldStage()
 	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/SMILEY512.png", nullptr, &texture_resources[0], 0);
 	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/RGB_TransparencyMap.png", nullptr, &texture_resources[1], 0);
 	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/3_FONT.png", nullptr, &texture_resources[2], 0);
+
+
+	//10x10 grid per pixel drawing.
+	const int WIDTH = 800;
+	const int HEIGHT = 800;
+	const uint32_t RED = (127 << 0) | (0 << 8) | (0 << 16) | (255 << 24);
+	uint32_t *buffer = new uint32_t[WIDTH * HEIGHT];
+
+	for (int i = 0; i < WIDTH*HEIGHT; ++i)
+	{
+		buffer[i] = RED;
+	}
 	
 	Engine::context->GenerateMips(texture_resources[0]);
 	Engine::context->GenerateMips(texture_resources[1]);
@@ -132,9 +178,7 @@ void ContentLoader::LoadWorldStage()
 	fonts[0].texture_width = 348;
 	fonts[0].texture_height = 193;
 
-	overlays[0].SetUpdateProc(2);
-
-	Float3 Color = { 0.02f, 0.1f, 0.02f };
+	Float3 Color = {CreateShaderColor(0.05f, 1.0f), 0.15f, 0.05f};
 
 	float
 		xPos =   -96.0f,
@@ -157,7 +201,7 @@ void ContentLoader::LoadWorldStage()
 		SIZE =   96.0f,
 		SIZE_2 = 96.0f;
 
-		Color._1 = 0.4f, Color._2 = 0.1f, Color._3 = 0.1f;
+		Color._1 = CreateShaderColor(0.4f, 1.0f), Color._2 = 0.15F, Color._3 = 0.15F;
 
 	 MeshVerts[6] = { xPos			, yPos , zPos			, Color._1, Color._2, Color._3,	  0.0f,   0.0f };
 	 MeshVerts[7] = { xPos			, yPos , zPos + SIZE	, Color._1, Color._2, Color._3,   0.0f,   SIZE_2 };
@@ -169,16 +213,22 @@ void ContentLoader::LoadWorldStage()
 
 	static_mesh_buffer_size = 11;
 
+	XModelMesh::LoadCollisionData();
 	XModelMesh::LoadObjectDefintions();
 
 	for (int x = 1; x < 48; ++x)
 	{
 		for (int z = 1; z < 10; ++z)
 		{
-			XModelMesh::InsertObjectToMap(MeshVerts, static_mesh_buffer_size, 
+			XModelMesh::InsertObjectToMap(MeshVerts, buffer, static_mesh_buffer_size, 
 				0, 100 + (x * 200), 100, 100 + (z * 300));
 		}
 	}
+
+	XModelMesh::TestValues();
+
+	WritePixelsToShaderIndex(buffer, WIDTH, HEIGHT, 3);
+	delete[] buffer;
 
 	D3D11_MAPPED_SUBRESOURCE resource;
 	ZeroMemory(&resource, sizeof(D3D11_MAPPED_SUBRESOURCE));
@@ -186,18 +236,30 @@ void ContentLoader::LoadWorldStage()
 	memcpy(resource.pData, &MeshVerts, sizeof(Vertex32Byte) * static_mesh_buffer_size);
 	Engine::context->Unmap(static_mesh_buffer.Get(), 0);
 
-	Float3 v = { 1.0f, 1.0f, 1.0f };
+	Float3 v = { CreateShaderColor(1.0f, 1.0f), 1.0f, 1.0f};
+
+	overlays[0].SetUpdateProc(2);
+	overlays[0].total_textures = 2;
 
 	static_overlay_buffer_size = 0;
 
+	overlays[0].texture_index[0] = 2;
 	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Position X : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 20, 0);
 	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Position Y : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 60, 0);
 	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Position Z : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 100, 0);
 	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"UpperLeft X : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 140, 0);
 	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"UpperLeft Z : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 180, 0);
 	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Rotation : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 220, 0);
-	static_overlay_buffer_size = XModelMesh::CreateTexturedSquare(OverlayVerts, static_overlay_buffer_size, v, 350, 200, 500, 500);
 
+	overlays[0].offsets[0] = static_overlay_buffer_size;
+	overlays[0].texture_index[1] = 3;
+
+	v = { CreateShaderColor(1.0f, 1.0f), 1.0f, 1.0f }; //Square Quad.
+	static_overlay_buffer_size = XModelMesh::CreateTexturedSquare(OverlayVerts, static_overlay_buffer_size, v, 320, 320, 500, 500);
+
+	v = { CreateShaderColor(0.5f, 0.5f), 0.5f, 1.0f }; //Blocking Box.
+	static_overlay_buffer_size = XModelMesh::CreateTexturedSquare(OverlayVerts, static_overlay_buffer_size, v, 1, 1, 500, 500);
+	
 	ZeroMemory(&resource, sizeof(D3D11_MAPPED_SUBRESOURCE));
 	Engine::context->Map(static_overlay_buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &resource);
 	memcpy(resource.pData, &OverlayVerts, sizeof(Vertex32Byte) * static_overlay_buffer_size);
@@ -278,7 +340,7 @@ void ContentLoader::LoadMenuStage()
 	fonts[3].texture_width = 348;
 	fonts[3].texture_height = 193;
 
-	Float3 v = {1.0F, 1.0F, 1.0F};
+	Float3 v = { CreateShaderColor(1.0f, 1.0f), 1.0f, 1.0f};
 
 	int begin = 6;
 	int offset = fonts[1].AddStringToBuffer(L"Developed By", InterfaceVerts, v, 6, 0, 50, 1);
@@ -307,7 +369,7 @@ void ContentLoader::LoadMenuStage()
 
 	begin = offset;
 
-	Float3 Green = { 0.0F, 1.0F, 0.0F };
+	Float3 Green = { CreateShaderColor(0.0f, 1.0f), 1.0f, 0.0F };
 	offset = fonts[1].AddStringToBuffer(L"Undead Survival", InterfaceVerts, v, offset, 0, 10, 1);
 	offset = fonts[1].AddStringToBuffer(L"Game Engine", InterfaceVerts, v, offset, 0, 130, 1);
 
@@ -366,7 +428,6 @@ void ContentLoader::RotateOverlayTexture(int begin, Float2 verts[4])
 
 void ContentLoader::UpdateOverlayString(int begin, const char* text, int zeroing_size)
 {
-	Float3 C = { 1.0f, 1.0f, 1.0f };
 	int offset = fonts[0].UpdateBufferString(begin, text, OverlayVerts);
 	for (int j = offset; j < (begin + zeroing_size); ++j)
 		OverlayVerts[j]._Z = -32768.0f;
@@ -374,8 +435,8 @@ void ContentLoader::UpdateOverlayString(int begin, const char* text, int zeroing
 
 void ContentLoader::SwapQuadsPosition(int offset_a, int offset_b)
 {
-	Float3 W = { 1.0f, 1.0f, 1.0f };
-	Float3 G = { 0.0f, 1.0f, 0.0f };
+	Float3 W = { CreateShaderColor(1.0f, 1.0f), 1.0f, 1.0f };
+	Float3 G = { CreateShaderColor(0.0f, 1.0f), 1.0f, 0.0f };
 
 	for (int a = 0; a < 3; ++a)
 	{
