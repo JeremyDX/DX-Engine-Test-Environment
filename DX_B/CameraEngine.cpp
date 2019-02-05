@@ -17,13 +17,14 @@ XMFLOAT4X4 CameraEngine::final_result;
 Float2 up;
 Float2 forward;
 Float2 right;
+Float2 test;
 Byte2 quadrants;
 
 //Player Position In World Space.
 Float3 position;
 
 //The Look Left/Right Rotation and Look Up/Down Rotation
-Int2 rotation_data;
+Int4 rotation_data;
 
 //Primary Camera Matrix.
 XMFLOAT4X4 camera_matrix;
@@ -53,19 +54,56 @@ void CameraEngine::ResetPrimaryCameraMatrix()
 	position._3 = 0.5F;
 
 	rotation_data._1 = 0;
-	rotation_data._2 = 0;
+	rotation_data._2 = rotation_data._3 = 90 * 32000;
+	rotation_data._4 = 0;
 
-	right._1 = 1.0f;
-	right._2 = 0.0f;
+	int value = rotation_data._2 / 320;
+	double PI = 3.14159265;
+
+	forward._1 = (float)sin((value * PI) / 18000);
+	forward._2 = (float)cos((value * PI) / 18000);
+
+	right._1 = (float)sin(((value + 9000) * PI) / 18000);
+	right._2 = (float)cos(((value + 9000) * PI) / 18000);
 
 	up._1 = 0.0f;
 	up._2 = 1.0f;
 
-	forward._1 = 0.0f;
-	forward._2 = 1.0f;
-
 	quadrants._1 = 0;
 	quadrants._2 = 0;
+
+	float SinFace = 0.0F, CosFace = 1.0F;
+
+	float SinH = SinFace * 0.125F;
+	float CosH = CosFace * 0.125F;
+	float SinW = SinFace * 0.250F;
+	float CosW = CosFace * 0.250F;
+
+	blocking_value[0]._1 = -CosW + SinH;
+	blocking_value[0]._2 =  SinW + CosH;
+
+	blocking_value[1]._1 =  CosW + SinH;
+	blocking_value[1]._2 = -SinW + CosH;
+
+	blocking_value[2]._1 = -blocking_value[0]._1;
+	blocking_value[2]._2 = -blocking_value[0]._2;
+
+	blocking_value[3]._1 = -blocking_value[1]._1;
+	blocking_value[3]._2 = -blocking_value[1]._2;
+
+	/*
+	blocking_value[0]._1 = -0.250F;
+	blocking_value[0]._2 = 0.125F;
+
+	blocking_value[1]._1 = 0.250F;
+	blocking_value[1]._2 = 0.125F;
+
+	blocking_value[2]._1 = -blocking_value[0]._1;
+	blocking_value[2]._2 = -blocking_value[0]._2;
+
+	blocking_value[3]._1 = -blocking_value[1]._1;
+	blocking_value[3]._2 = -blocking_value[1]._2;
+	*/
 
 	BuildPrimaryCameraMatrix();
 
@@ -135,7 +173,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 	unsigned int abs_forward = forward_strength * forward_strength;
 	unsigned int abs_right = right_strength * right_strength;
-	unsigned int dead_zone = 6400 * 6400; //Should be about at least 20% of joystick needs to be pressed. 
+	const unsigned int dead_zone = 6400 * 6400; //Should be about at least 20% of joystick needs to be pressed. 
 
 	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::LEFT_STICK_CLICK))
 	{
@@ -230,19 +268,90 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 	{
 		rotation_data._2 += (turn_strength * delta_frame * HORIZONTAL_SPEED);
 
+		int angle = rotation_data._2 - rotation_data._3 - rotation_data._4;
+
 		if (rotation_data._2 < 0)
-			rotation_data._2 += 0xAFC800;
+		{
+			rotation_data._2 += 11520000;
+			rotation_data._4 += 11520000;
+		}
 		if (rotation_data._2 >= 0xAFC800)
-			rotation_data._2 -= 0xAFC800;
+		{
+			rotation_data._2 -= 11520000;
+			rotation_data._4 -= 11520000;
+		}
 
-		int value = rotation_data._2 / 320;
-		double PI = 3.14159265;
+		const double RADIAN_REDUCTION = 0.01745329251;
+		const double _90_DEGREES_AS_RADIANS = 1.57079632679;
 
-		forward._1 = (float)sin((value * PI) / 18000);
-		forward._2 = (float)cos((value * PI) / 18000);
+		double rotation = rotation_data._2 * 0.00003125 * RADIAN_REDUCTION;
 
-		right._1 = (float)sin(((value + 9000) * PI) / 18000);
-		right._2 = (float)cos(((value + 9000) * PI) / 18000);
+		forward._1 = (float)sin(rotation);
+		forward._2 = (float)cos(rotation);
+
+		rotation += _90_DEGREES_AS_RADIANS;
+
+		right._1 = (float)sin(rotation);
+		right._2 = (float)cos(rotation);
+
+		if (angle >= 2880000 || angle <= -2880000)
+		{
+			if (angle < 0)
+			{
+				angle += 2880000;
+				rotation_data._3 -= 2880000;
+				if (rotation_data._3 < 0)
+				{
+					rotation_data._3 += 11520000;
+					rotation_data._4 -= 11520000;
+				}
+			}
+			else 
+			{
+				angle -= 2880000;
+				rotation_data._3 += 2880000;
+				if (rotation_data._3 >= 11520000)
+				{
+					rotation_data._3 -= 11520000;
+					rotation_data._4 += 11520000;
+				}
+			}
+
+			int quadrant = rotation_data._3 / 2880000;
+
+			Float2 Corners[4];
+
+			float SinH = forward._1 * 0.125F;
+			float CosH = forward._2 * 0.125F;
+			float SinW = forward._1 * 0.250F;
+			float CosW = forward._2 * 0.250F;
+
+			Corners[0]._1 = ( CosW + SinH);
+			Corners[0]._2 = (-SinW + CosH);
+
+			//1
+			Corners[1]._1 = (-CosW + SinH);
+			Corners[1]._2 = ( SinW + CosH);
+
+			//2
+			Corners[2]._1 = -Corners[0]._1;
+			Corners[2]._2 = -Corners[0]._2;
+
+			//3
+			Corners[3]._1 = -Corners[1]._1;
+			Corners[3]._2 = -Corners[1]._2;
+
+			for (int j = 0; j < 4; ++j)
+			{
+				Corners[j]._1 += SinH;
+				Corners[j]._2 += CosH;
+			}
+
+			ContentLoader::RotateOverlayTexture(900, Corners);
+		}
+
+		test._2 = angle / 32000;
+		test._1 = rotation_data._3 / 32000;
 
 		updated = true;
 	}
@@ -255,6 +364,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 		if (rotation_data._1 < -RANGE)
 			rotation_data._1 = -RANGE;
+
 		if (rotation_data._1 > RANGE)
 			rotation_data._1 = RANGE;
 		
@@ -272,11 +382,14 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 	{
 		Float2 verify = { 0.0f, 0.0f };
 
+		bool moved = false;
+
 		if (abs_forward > dead_zone)
 		{
 			float strength = (float)(forward_strength * delta_frame) / 600000L;
 			verify._1 += strength * forward._1; //SinX
 			verify._2 += strength * forward._2; //CosZ
+			moved = true;
 		}
 
 		if (abs_right > dead_zone)
@@ -284,14 +397,63 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 			float strength = (float)(right_strength * delta_frame) / 600000L;
 			verify._1 += strength * right._1; //SinX
 			verify._2 += strength * right._2; //CosZ
+			moved = true;
 		}
 
-		position._1 += verify._1;
-		position._3 += verify._2;
+		if (moved)
+		{
+			position._1 += verify._1;
+			position._3 += verify._2;
 
-		updated = true;
+			int angle = rotation_data._2 - rotation_data._3 - rotation_data._4;
 
-		//XModelMesh::GetCurrentCollidorIndex(position);
+			if (angle != 0)
+			{
+				rotation_data._3 += angle;
+				if (rotation_data._3 < 0)
+				{
+					rotation_data._3 += 11520000;
+					rotation_data._4 -= 11520000;
+				}
+				else if (rotation_data._3 >= 11520000)
+				{
+					rotation_data._3 -= 11520000;
+					rotation_data._4 += 11520000;
+				}
+
+				int quadrant = rotation_data._3 / 2880000;
+
+				Float2 Corners[4];
+
+				float SinH = forward._1 * 0.125F;
+				float CosH = forward._2 * 0.125F;
+				float SinW = forward._1 * 0.250F;
+				float CosW = forward._2 * 0.250F;
+
+				Corners[0]._1 = (CosW + SinH);
+				Corners[0]._2 = (-SinW + CosH);
+
+				//1
+				Corners[1]._1 = (-CosW + SinH);
+				Corners[1]._2 = (SinW + CosH);
+
+				//2
+				Corners[2]._1 = -Corners[0]._1;
+				Corners[2]._2 = -Corners[0]._2;
+
+				//3
+				Corners[3]._1 = -Corners[1]._1;
+				Corners[3]._2 = -Corners[1]._2;
+
+				XModelMesh::VerifyCollisionPlacement(position, Corners);
+
+				ContentLoader::RotateOverlayTexture(900, Corners);
+			}
+			angle = rotation_data._2 - rotation_data._3 - rotation_data._4;
+			test._2 = angle / 32000;
+			test._1 = rotation_data._3 / 32000;
+			updated = true;
+		}
 	}
 
 	if (position._1 < 0.5f)
@@ -316,22 +478,22 @@ void CameraEngine::CreateDebugOverlay()
 {
 	char buffer[12];
 
-	snprintf(buffer, 12, "%f", position._1);
+	snprintf(buffer, 12, "%f", blocking_value[0]._1);
 	ContentLoader::UpdateOverlayString(13 * 6, buffer, 12 * 6);
 
-	snprintf(buffer, 12, "%f", position._2);
+	snprintf(buffer, 12, "%f", blocking_value[0]._2);
 	ContentLoader::UpdateOverlayString(38 * 6, buffer, 12 * 6);
 
-	snprintf(buffer, 12, "%f", position._3);
+	snprintf(buffer, 12, "%f", blocking_value[1]._1);
 	ContentLoader::UpdateOverlayString(63 * 6, buffer, 12 * 6);
 
-	snprintf(buffer, 12, "%f", blocking_value[2]._1);
+	snprintf(buffer, 12, "%f", blocking_value[1]._2);
 	ContentLoader::UpdateOverlayString(89 * 6, buffer, 12 * 6);
 
-	snprintf(buffer, 12, "%f", blocking_value[2]._2);
+	snprintf(buffer, 12, "%f", test._2);
 	ContentLoader::UpdateOverlayString(115 * 6, buffer, 12 * 6);
 
-	snprintf(buffer, 12, "%f", 0.0F);
+	snprintf(buffer, 12, "%f", test._1);
 	ContentLoader::UpdateOverlayString(138 * 6, buffer, 12 * 6);
 }
 

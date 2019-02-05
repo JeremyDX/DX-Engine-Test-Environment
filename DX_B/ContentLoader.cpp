@@ -252,12 +252,9 @@ void ContentLoader::LoadWorldStage()
 	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Rotation : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 220, 0);
 
 	overlays[0].offsets[0] = static_overlay_buffer_size;
-	overlays[0].texture_index[1] = 3;
+	overlays[0].texture_index[1] = 0;
 
-	v = { CreateShaderColor(1.0f, 1.0f), 1.0f, 1.0f }; //Square Quad.
-	static_overlay_buffer_size = XModelMesh::CreateTexturedSquare(OverlayVerts, static_overlay_buffer_size, v, 320, 320, 500, 500);
-
-	v = { CreateShaderColor(0.5f, 0.5f), 0.5f, 1.0f }; //Blocking Box.
+	v = { CreateShaderColor(1.0f, 0.9f), 1.0f, 1.0f }; //Blocking Box.
 	static_overlay_buffer_size = XModelMesh::CreateTexturedSquare(OverlayVerts, static_overlay_buffer_size, v, 1, 1, 500, 500);
 	
 	ZeroMemory(&resource, sizeof(D3D11_MAPPED_SUBRESOURCE));
@@ -409,21 +406,21 @@ void ContentLoader::RotateOverlayTexture(int begin, Float2 verts[4])
 	//4 = Tri 2 - Top Left , 0
 	//5 = Tri 2 - Top Right , 1
 
-	OverlayVerts[begin + 0]._X = verts[0]._1 / ScreenManager::ASPECT_RATIO;
-	OverlayVerts[begin + 1]._X = verts[2]._1 / ScreenManager::ASPECT_RATIO;
-	OverlayVerts[begin + 2]._X = verts[3]._1 / ScreenManager::ASPECT_RATIO;
+	OverlayVerts[begin + 0]._X = verts[1]._1 / ScreenManager::ASPECT_RATIO;
+	OverlayVerts[begin + 1]._X = verts[3]._1 / ScreenManager::ASPECT_RATIO;
+	OverlayVerts[begin + 2]._X = verts[2]._1 / ScreenManager::ASPECT_RATIO;
 
-	OverlayVerts[begin + 3]._X = verts[2]._1 / ScreenManager::ASPECT_RATIO;
-	OverlayVerts[begin + 4]._X = verts[0]._1 / ScreenManager::ASPECT_RATIO;
-	OverlayVerts[begin + 5]._X = verts[1]._1 / ScreenManager::ASPECT_RATIO;
+	OverlayVerts[begin + 3]._X = verts[3]._1 / ScreenManager::ASPECT_RATIO;
+	OverlayVerts[begin + 4]._X = verts[1]._1 / ScreenManager::ASPECT_RATIO;
+	OverlayVerts[begin + 5]._X = verts[0]._1 / ScreenManager::ASPECT_RATIO;
 
-	OverlayVerts[begin + 0]._Y = verts[0]._2;
-	OverlayVerts[begin + 1]._Y = verts[2]._2;
-	OverlayVerts[begin + 2]._Y = verts[3]._2;
+	OverlayVerts[begin + 0]._Y = verts[1]._2;
+	OverlayVerts[begin + 1]._Y = verts[3]._2;
+	OverlayVerts[begin + 2]._Y = verts[2]._2;
 
-	OverlayVerts[begin + 3]._Y = verts[2]._2;
-	OverlayVerts[begin + 4]._Y = verts[0]._2;
-	OverlayVerts[begin + 5]._Y = verts[1]._2;
+	OverlayVerts[begin + 3]._Y = verts[3]._2;
+	OverlayVerts[begin + 4]._Y = verts[1]._2;
+	OverlayVerts[begin + 5]._Y = verts[0]._2;
 }
 
 void ContentLoader::UpdateOverlayString(int begin, const char* text, int zeroing_size)
