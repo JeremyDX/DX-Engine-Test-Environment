@@ -250,7 +250,7 @@ void InitializeDirectXProperties()
 
 	CreatePipeline();
 
-	CameraEngine::ResetPrimaryCameraMatrix();
+	CameraEngine::ResetPrimaryCameraMatrix(90);
 
 	ContentLoader::AllocateVertexBuffers();
 	ContentLoader::LoadContentStage(0); //First Content Batch.

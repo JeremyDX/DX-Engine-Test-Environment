@@ -6,7 +6,7 @@
 class CameraEngine
 {
 	public:
-		static void ResetPrimaryCameraMatrix();
+		static void ResetPrimaryCameraMatrix(const int FACE_DIRECTION);
 		static bool PrimaryCameraUpdatedLookAt();
 		static void CreateDebugOverlay();
 
