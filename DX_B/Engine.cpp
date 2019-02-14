@@ -47,15 +47,11 @@ ComPtr<ID3D11DepthStencilState> depthoffstate;
 
 ComPtr<ID3D11SamplerState> sampler;
 
-FileReaderWriter file_reader;
-CameraEngine camera;
-XModelMesh model_mesh;
-
 void CreatePipeline()
 {
-	Platform::Array<byte>^ VSFile = file_reader.ReadBytesFromFile("VertexShader.cso");
+	Platform::Array<byte>^ VSFile = FileReaderWriter::ReadBytesFromFile("VertexShader.cso");
 
-	Platform::Array<byte>^ PixelShader = file_reader.ReadBytesFromFile("TexturePosition.cso");
+	Platform::Array<byte>^ PixelShader = FileReaderWriter::ReadBytesFromFile("TexturePosition.cso");
 
 	Engine::device->CreateVertexShader(VSFile->Data, VSFile->Length, nullptr, &vertexshader);
 	Engine::device->CreatePixelShader(PixelShader->Data, PixelShader->Length, nullptr, &pixelshader);
@@ -364,7 +360,7 @@ void Render()
 			Engine::context->Draw(co.offsets[i], co.offsets[i - 1]);
 		}
 	}
-
+	                                 
 	swapchain->Present(VSYNC_ON, 0);
 }
 
@@ -384,7 +380,7 @@ int Engine::Boot(int preferred_height, int preferred_width)
 	InitializeDirectXProperties();
 
 	CoreWindow^ Window = CoreWindow::GetForCurrentThread();
-
+	
 	while (KEEP_LOOPING)
 	{
 		Window->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);

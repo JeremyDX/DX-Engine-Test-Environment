@@ -260,6 +260,7 @@
   <ItemGroup>
     <ClInclude Include="Animation.h" />
     <ClInclude Include="CameraEngine.h" />
+    <ClInclude Include="Collision.h" />
     <ClInclude Include="ContentLoader.h" />
     <ClInclude Include="ContentOverlay.h" />
     <ClInclude Include="Engine.h" />

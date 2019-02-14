@@ -28,16 +28,24 @@ void ProcessMenuButtons(void)
 	ContentWindow& cw = ContentLoader::GetCurrentWindow();
 	cw.children();
 	if (XGameInput::AnyOfTheseButtonsArePressed(
-		XBOX_CONTROLLER::A_BUTTON | XBOX_CONTROLLER::X_BUTTON | XBOX_CONTROLLER::MENU_BUTTON | XBOX_CONTROLLER::VIEW_BUTTON
+		XBOX_CONTROLLER::A_BUTTON | XBOX_CONTROLLER::X_BUTTON | 
+		XBOX_CONTROLLER::MENU_BUTTON | XBOX_CONTROLLER::VIEW_BUTTON
 	))
 	{
 		switch (cw.menu_index)
 		{
+			case 0:
+				ContentLoader::ClearWindow();
+				ContentLoader::LoadContentStage(2);
+				break;
+
 			case 1:
 				ContentLoader::ClearWindow();
 				ContentLoader::LoadContentStage(1);
 				break;
+
 			case 2:
+				ContentLoader::ClearWindow();
 				ContentLoader::LoadContentStage(0);
 				ContentLoader::PresentWindow(0);
 				break;
@@ -79,18 +87,29 @@ void MenuUpdateLeftRight(void)
 	}
 }
 
+void Play2DWorld(void) 
+{
+	ContentWindow & cw = ContentLoader::GetCurrentWindow();
+}
+
 void DoNothing(void) { }
 
 void ContentWindow::SetUpdateProc(int index)
 {
-	if (index == 2)
+	if (index == 3)
+	{
+		update = Play2DWorld;
+	}
+	else if (index == 2)
 	{
 		update = ProcessMenuButtons;
 	}
 	else if (index == 1)
 	{
 		update = UpdateToWindow;
-	} else {
+	} 
+	else 
+	{
 		update = DoNothing;
 	}
 }

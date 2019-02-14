@@ -9,7 +9,11 @@ void FontResource::CreateGlyphMapping(int mapping_id)
 {
 	if (mapping_id == 0)
 	{
-		short positions[96]
+		font_size = 38;
+		texture_width = 413;
+		texture_height = 235;
+
+		const short positions[96]
 		{
 			16,27,41,64,87,111,135,145,159,173,216,237,248,263,274,291,
 			23,44,67,90,114,137,160,183,206,229,240,283,326,347,390,411,
@@ -25,7 +29,11 @@ void FontResource::CreateGlyphMapping(int mapping_id)
 
 	else if (mapping_id == 1)
 	{
-		short positions[96]
+		font_size = 105;
+		texture_width = 1185;
+		texture_height = 637;
+
+		const short positions[96]
 		{
 			49,92,147,227,293,376,458,503,556,608,671,749,794,862,907,965,
 			73,124,191,258,331,395,466,535,606,677,720,763,841,919,998,1062,
@@ -42,7 +50,12 @@ void FontResource::CreateGlyphMapping(int mapping_id)
 
 	else if (mapping_id == 2)
 	{
-		short positions[96]
+
+		font_size = 40;
+		texture_width = 422;
+		texture_height = 247;
+
+		const short positions[96]
 		{
 			17,30,47,75,103,130,157,170,186,202,221,245,258,276,289,309,
 			26,52,78,104,132,158,184,210,236,262,275,288,313,338,362,386,
@@ -58,7 +71,11 @@ void FontResource::CreateGlyphMapping(int mapping_id)
 
 	else if (mapping_id == 3)
 	{
-		short positions[96]
+		font_size = 31;
+		texture_width = 348;
+		texture_height = 193;
+
+		const short positions[96]
 		{
 			16,28,43,65,86,108,130,142,157,172,188,208,220,235,247,264,
 			21,41,62,83,105,126,147,168,189,210,222,234,254,274,294,313,

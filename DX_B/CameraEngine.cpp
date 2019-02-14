@@ -23,7 +23,8 @@ Float2 test;
 Byte2 quadrants;
 
 //Player Position In World Space.
-Float3 position;
+Float3 player_position;
+//Float3 camera_position;
 
 //The Look Left/Right Rotation and Look Up/Down Rotation
 Int4 rotation_data;
@@ -37,6 +38,8 @@ Int2 animation_move_strength = { 0, 0 };
 bool throttled_jump = false;
 bool sprinting = false;
 
+bool send_camera_as_player = true;
+
 int HORIZONTAL_SPEED = 3;
 int VERTICAL_SPEED = 2;
 
@@ -48,9 +51,9 @@ void CreateFinalMatrixResult()
 
 void CameraEngine::ResetPrimaryCameraMatrix(const int FACE_DIRECTION)
 {
-	position._1 = 0.5F;
-	position._2 = 0.0F;
-	position._3 = 0.5F;
+	player_position._1 = 0.5F;
+	player_position._2 = 0.0F;
+	player_position._3 = 0.5F;
 
 	rotation_data._1 = 0;
 	rotation_data._2 = rotation_data._3 = FACE_DIRECTION * 32000;
@@ -59,7 +62,7 @@ void CameraEngine::ResetPrimaryCameraMatrix(const int FACE_DIRECTION)
 	up._1 = 0.0f;
 	up._2 = 1.0f;
 
-	double rotation = rotation_data._2 * 0.00003125 * ONE_DEGREE_AS_RADIANS;
+	double rotation = FACE_DIRECTION * ONE_DEGREE_AS_RADIANS;
 
 	forward._1 = (float)sin(rotation);
 	forward._2 = (float)cos(rotation);
@@ -78,6 +81,7 @@ void CameraEngine::ResetPrimaryCameraMatrix(const int FACE_DIRECTION)
 	blocking_value[0]._2 = (-SinW + CosH);
 	blocking_value[1]._1 = (-CosW + SinH);
 	blocking_value[1]._2 = (SinW + CosH);
+
 	blocking_value[2]._1 = -blocking_value[0]._1;
 	blocking_value[2]._2 = -blocking_value[0]._2;
 	blocking_value[3]._1 = -blocking_value[1]._1;
@@ -111,20 +115,19 @@ void CameraEngine::BuildPrimaryCameraMatrix()
 	camera_matrix._23 = -up._1;              //Inverse of Sin(Look)
 	camera_matrix._33 =  up._2 * forward._2; //Cos(Look) * Cos(Turn)
 
-
-	float xoffset = (position._1);
-	float zoffset = (position._3);
-
-	float height = (position._2 + 1.8F);
+	float xoffset = (player_position._1);
+	float zoffset = (player_position._3);
+	float height =  (player_position._2 + 1.8);
 
 	//Dot Product (Position, Right Vector).
 	camera_matrix._41 = -(xoffset * camera_matrix._11 + height * camera_matrix._21 + zoffset * camera_matrix._31);
 
 	//Dot Product (Position, Up Vector).
-	camera_matrix._42 = -(xoffset* camera_matrix._12 + height * camera_matrix._22 + zoffset * camera_matrix._32);
+	camera_matrix._42 = -(xoffset * camera_matrix._12 + height * camera_matrix._22 + zoffset * camera_matrix._32);
 
 	//Dot Product (Position, Forward Vector).
 	camera_matrix._43 = -(xoffset * camera_matrix._13 + height * camera_matrix._23 + zoffset * camera_matrix._33);
+
 }
 
 bool CameraEngine::PrimaryCameraUpdatedLookAt()
@@ -169,20 +172,14 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::A_BUTTON))
 	{
 		int change = (current_frame - forced_animation_index);
-		if (change > 49)
+		if (change > 29)
 		{
-			throttled_jump = change < ref.Length + 6;
-			forced_animation_index = (throttled_jump || sprinting) ? current_frame - 20 : current_frame;
-			base_animation_position._1 = position._1;
+			forced_animation_index = current_frame;
+			base_animation_position._1 = player_position._1;
 			base_animation_position._2 = 0.0f;
-			base_animation_position._3 = position._3;
+			base_animation_position._3 = player_position._3;
 			animation_move_strength._1 = abs_right > DEAD_ZONE ? right_strength : 0;
 			animation_move_strength._2 = abs_forward > DEAD_ZONE ? forward_strength : 0;
-			if (throttled_jump && !sprinting)
-			{
-				animation_move_strength._1 /= 2;
-				animation_move_strength._2 /= 2;
-			}
 			anim_move_vectors._1 = right._1;
 			anim_move_vectors._2 = right._2;
 			anim_move_vectors._3 = forward._1;
@@ -193,50 +190,34 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 	int jump_frame = current_frame - forced_animation_index;
 	bool isJumping = jump_frame < ref.Length;
-	bool isBlocking = jump_frame < 50;
+	bool isBlocking = jump_frame < 30;
 
 	if (isJumping)
 	{
 		updated = true;
 		 
-		if (jump_frame <= 9)
+		if (jump_frame <= 29)
 		{
-			//0,3,6,9
-			position._2 = base_animation_position._2 - (0.0160 * (jump_frame + 1));
-			forced_animation_index -= 2;
-		}
-		else if (jump_frame <= 19)
-		{
-			//12,15,18,
-			int value = 10 - (jump_frame - 9);
-			position._2 = base_animation_position._2 - (0.0160 * value);
-			forced_animation_index -= 2;
-		}
-		else if (jump_frame <= 49)
-		{
-			//21 to 49 = 29 Frames.
-			int value = 196 - ((jump_frame - 34) * (jump_frame - 34));
-			if (throttled_jump)
-				value /= 2;
-			position._2 = base_animation_position._2 + ((float)value / 196);
+			//Frames 0 - 28.
+			int value = 196 - ((jump_frame - 14) * (jump_frame - 14));
+			if (!sprinting)
+				value /= 2.0f;
+			player_position._2 = base_animation_position._2 + ((float)value / 196);
+
+			float r_strength = (float)(animation_move_strength._1 * (jump_frame + 1)) / 600000L;
+			float f_strength = (float)(animation_move_strength._2 * (jump_frame + 1)) / 600000L;
+
+			player_position._1 = base_animation_position._1 + r_strength * anim_move_vectors._1;
+			player_position._3 = base_animation_position._3 + r_strength * anim_move_vectors._2;
+
+			player_position._1 = player_position._1 + f_strength * anim_move_vectors._3;
+			player_position._3 = player_position._3 + f_strength * anim_move_vectors._4;
 		} 
-		else if (jump_frame <= 59)
+		else if (jump_frame <= 39)
 		{
 			//10 Frames.
-			int value = 10 - (jump_frame - 49); 
-			position._2 = base_animation_position._2 - (0.0160 * value);
-		}
-		if (jump_frame >= 20 && jump_frame <= 49)
-		{
-			//1 to 30.
-			float r_strength = (float)(animation_move_strength._1 * (jump_frame - 19)) / 600000L;
-			float f_strength = (float)(animation_move_strength._2 * (jump_frame - 19)) / 600000L;
-
-			position._1 = base_animation_position._1 + r_strength * anim_move_vectors._1;
-			position._3 = base_animation_position._3 + r_strength * anim_move_vectors._2;
-
-			position._1 = position._1 + f_strength * anim_move_vectors._3;
-			position._3 = position._3 + f_strength * anim_move_vectors._4;
+			int value = 10 - (jump_frame - 29); 
+			player_position._2 = base_animation_position._2 - (0.0160 * value);
 		}
 	}
 
@@ -322,24 +303,22 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 			int quadrant = rotation_data._3 / 2880000;
 
-			position._1 += forward._1 * (0.250f - 0.125F);
-			position._3 += forward._2 * (0.250f - 0.125F);
+			player_position._1 += forward._1 * (0.250f - 0.125F);
+			player_position._3 += forward._2 * (0.250f - 0.125F);
 
 			test._1 = forward._1 * (0.250f - 0.125F);
 			test._2 = forward._2 * (0.250f - 0.125F);
 
 			if (angle < 0)
 			{
-				position._1 -= right._1 * (0.250f - 0.125F);
-				position._3 -= right._2 * (0.250f - 0.125F);
+				player_position._1 -= right._1 * (0.250f - 0.125F);
+				player_position._3 -= right._2 * (0.250f - 0.125F);
 			}
 			else 
 			{
-				position._1 += right._1 * (0.250f - 0.125F);
-				position._3 += right._2 * (0.250f - 0.125F);
+				player_position._1 += right._1 * (0.250f - 0.125F);
+				player_position._3 += right._2 * (0.250f - 0.125F);
 			}
-
-			ContentLoader::RotateOverlayTexture(900, Corners);
 		}
 
 		updated = true;
@@ -356,13 +335,11 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 		if (rotation_data._1 > RANGE)
 			rotation_data._1 = RANGE;
-		
-		double PI = 3.14159265;
 
-		int value = rotation_data._1 / 320;
+		float value = rotation_data._1 * 0.00003125 * ONE_DEGREE_AS_RADIANS;
 
-		up._1 = (float)sin((value * PI) / 18000);
-		up._2 = (float)cos((value * PI) / 18000);
+		up._1 = (float)sin(value);
+		up._2 = (float)cos(value);
 
 		updated = true;
 	}
@@ -391,8 +368,10 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 		if (moved)
 		{
-			position._1 += verify._1;
-			position._3 += verify._2;
+			int dir = 0;
+
+			player_position._1 += verify._1;
+			player_position._3 += verify._2;
 
 			int angle = rotation_data._2 - rotation_data._3 - rotation_data._4;
 
@@ -433,23 +412,19 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 				//3
 				Corners[3]._1 = -Corners[1]._1;
 				Corners[3]._2 = -Corners[1]._2;
-
-				XModelMesh::VerifyCollisionPlacement(position, Corners);
-
-				ContentLoader::RotateOverlayTexture(900, Corners);
 			}
 			updated = true;
 		}
 	}
 
-	if (position._1 < 0.5f)
-		position._1 = 0.5f;
-	else if (position._1 > 95.5f)
-		position._1 = 95.5f;
-	if (position._3 < 0.5f)
-		position._3 = 0.5f;
-	else if (position._3 > 95.5f)
-		position._3 = 95.5f;
+	if (player_position._1 < 0.5f)
+		player_position._1 = 0.5f;
+	else if (player_position._1 > 95.5f)
+		player_position._1 = 95.5f;
+	if (player_position._3 < 0.5f)
+		player_position._3 = 0.5f;
+	else if (player_position._3 > 95.5f)
+		player_position._3 = 95.5f;
 
 	if (updated)
 	{
@@ -464,13 +439,13 @@ void CameraEngine::CreateDebugOverlay()
 {
 	char buffer[12];
 
-	snprintf(buffer, 12, "%f", position._1);
+	snprintf(buffer, 12, "%f", player_position._1);
 	ContentLoader::UpdateOverlayString(13 * 6, buffer, 12 * 6);
 
-	snprintf(buffer, 12, "%f", position._2);
+	snprintf(buffer, 12, "%f", player_position._2);
 	ContentLoader::UpdateOverlayString(38 * 6, buffer, 12 * 6);
 
-	snprintf(buffer, 12, "%f", position._3);
+	snprintf(buffer, 12, "%f", player_position._3);
 	ContentLoader::UpdateOverlayString(63 * 6, buffer, 12 * 6);
 
 	snprintf(buffer, 12, "%f", 0.0f);

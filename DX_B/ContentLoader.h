@@ -37,24 +37,9 @@ class ContentLoader
 
 	private:
 		static void LoadHeaderInformation(int stage);
-
 		static void LoadMenuStage();
 		static void LoadWorldStage();
-
-		static ContentWindow* interfaces;
-		static ContentOverlay* overlays;
-		static FontResource* fonts;
-		static ID3D11ShaderResourceView** texture_resources;
-
-	private:
-
-		static unsigned __int16
-			max_overlays,
-			max_interfaces, 
-			max_fonts, 
-			max_textures, 
-			max_vshaders,
-			max_pshaders;
+		static void LoadSimple2DWorld();
 
 	public:
 		static Microsoft::WRL::ComPtr<ID3D11Buffer>

@@ -48,6 +48,7 @@
     <ClInclude Include="Animation.h" />
     <ClInclude Include="Landscape.h" />
     <ClInclude Include="ContentOverlay.h" />
+    <ClInclude Include="Collision.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\0_FONT.PNG">
