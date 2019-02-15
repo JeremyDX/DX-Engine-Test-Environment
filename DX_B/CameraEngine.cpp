@@ -180,6 +180,13 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 			base_animation_position._3 = player_position._3;
 			animation_move_strength._1 = abs_right > DEAD_ZONE ? right_strength : 0;
 			animation_move_strength._2 = abs_forward > DEAD_ZONE ? forward_strength : 0;
+
+			if (forward_strength <= 26000)
+			{
+				animation_move_strength._1 >>= 1;
+				animation_move_strength._2 >>= 1;
+			}
+
 			anim_move_vectors._1 = right._1;
 			anim_move_vectors._2 = right._2;
 			anim_move_vectors._3 = forward._1;
@@ -199,9 +206,8 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		if (jump_frame <= 29)
 		{
 			//Frames 0 - 28.
-			int value = 196 - ((jump_frame - 14) * (jump_frame - 14));
-			if (!sprinting)
-				value /= 2.0f;
+			int value = (196 - ((jump_frame - 14) * (jump_frame - 14))) >> 1;
+
 			player_position._2 = base_animation_position._2 + ((float)value / 196);
 
 			float r_strength = (float)(animation_move_strength._1 * (jump_frame + 1)) / 600000L;
@@ -277,50 +283,6 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		right._1 = (float)sin(rotation);
 		right._2 = (float)cos(rotation);
 
-		if (rotated)
-		{
-			Float2 Corners[4];
-
-			float SinH = forward._1 * 0.125F;
-			float CosH = forward._2 * 0.125F;
-			float SinW = forward._1 * 0.250F;
-			float CosW = forward._2 * 0.250F;
-
-			Corners[0]._1 = ( CosW + SinH);
-			Corners[0]._2 = (-SinW + CosH);
-
-			//1
-			Corners[1]._1 = (-CosW + SinH);
-			Corners[1]._2 = ( SinW + CosH);
-
-			//2
-			Corners[2]._1 = -Corners[0]._1;
-			Corners[2]._2 = -Corners[0]._2;
-
-			//3
-			Corners[3]._1 = -Corners[1]._1;
-			Corners[3]._2 = -Corners[1]._2;
-
-			int quadrant = rotation_data._3 / 2880000;
-
-			player_position._1 += forward._1 * (0.250f - 0.125F);
-			player_position._3 += forward._2 * (0.250f - 0.125F);
-
-			test._1 = forward._1 * (0.250f - 0.125F);
-			test._2 = forward._2 * (0.250f - 0.125F);
-
-			if (angle < 0)
-			{
-				player_position._1 -= right._1 * (0.250f - 0.125F);
-				player_position._3 -= right._2 * (0.250f - 0.125F);
-			}
-			else 
-			{
-				player_position._1 += right._1 * (0.250f - 0.125F);
-				player_position._3 += right._2 * (0.250f - 0.125F);
-			}
-		}
-
 		updated = true;
 	}
 
@@ -368,10 +330,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 		if (moved)
 		{
-			int dir = 0;
-
-			player_position._1 += verify._1;
-			player_position._3 += verify._2;
+			test._1 = XModelMesh::CheckBasicCollision(player_position, verify);
 
 			int angle = rotation_data._2 - rotation_data._3 - rotation_data._4;
 
@@ -390,28 +349,6 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 				}
 
 				int quadrant = rotation_data._3 / 2880000;
-
-				Float2 Corners[4];
-
-				float SinH = forward._1 * 0.125F;
-				float CosH = forward._2 * 0.125F;
-				float SinW = forward._1 * 0.250F;
-				float CosW = forward._2 * 0.250F;
-
-				Corners[0]._1 = (CosW + SinH);
-				Corners[0]._2 = (-SinW + CosH);
-
-				//1
-				Corners[1]._1 = (-CosW + SinH);
-				Corners[1]._2 = (SinW + CosH);
-
-				//2
-				Corners[2]._1 = -Corners[0]._1;
-				Corners[2]._2 = -Corners[0]._2;
-
-				//3
-				Corners[3]._1 = -Corners[1]._1;
-				Corners[3]._2 = -Corners[1]._2;
 			}
 			updated = true;
 		}
