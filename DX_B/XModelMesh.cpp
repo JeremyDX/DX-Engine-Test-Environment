@@ -5,8 +5,10 @@
 #include "ScreenManager.h"
 #include "ContentLoader.h"
 
-static const int GRID_SIZE = 96 * 96; //7680;
+static const int GRID_SIZE = 96 * 96; //9216;
 static const int MAX_COLLIDERS = 1000;
+static const int COLLISON_PADDING = 20;
+static const int OBJECT_ACCESS_PADDING = 40;
 static int ID = 0;
 
 struct ObjectDefinition
@@ -25,7 +27,7 @@ struct CollisionIndexList
 	uint16_t *ids = NULL;
 	uint8_t size;
 
-	void Insert(uint8_t id)
+	void Insert(uint16_t id)
 	{
 		if (ids == NULL)
 		{
@@ -44,6 +46,34 @@ struct CollisionIndexList
 
 		ids[size++] = id;
 	}
+
+	bool InsertIfNotContained(uint16_t id)
+	{
+		if (ids == NULL)
+		{
+			size = 1;
+			ids = new uint16_t[1]{ id };
+			return true;
+		}
+
+		for (int i = 0; i < size; ++i)
+		{
+			if (ids[i] == id)
+				return false;
+		}
+
+		if ((size & (size - 1)) == 0)
+		{
+			uint16_t *tmp = new uint16_t[size << 1];
+			memcpy(tmp, ids, size * sizeof(uint16_t));
+			delete[] ids;
+			ids = tmp;
+		}
+
+		ids[size++] = id;
+		return true;
+	}
+
 };
 
 struct ColliderChecks
@@ -75,190 +105,103 @@ void XModelMesh::LoadCollisionData()
 
 int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector)
 {
-	int start_index = ((int)(ref._1)) + (((int)ref._3) * 96);
-	CollisionIndexList &c = collision_list[start_index];
+	int beginX = (int)(ref._1 - 1);
+	int beginZ = (int)(ref._3 - 1);
 
 	float verify_point_x = (ref._1 + move_vector._1);
 	float verify_point_z = (ref._3 + move_vector._2);
 
-	int end_index = ((int)(verify_point_x)) + (((int)verify_point_z) * 96);
-
-	if (c.ids == NULL && end_index == start_index)
+	for (int x = beginX; x < beginX + 3; ++x)
 	{
-		ref._1 += move_vector._1;
-		ref._3 += move_vector._2;
-		return 0;
-	}
-
-	if (c.ids != NULL)
-	{
-		for (int i = 0; i < c.size; ++i)
+		for (int z = beginZ; z < beginZ + 3; ++z)
 		{
-			ColliderChecks &collider = colliders[c.ids[i]];
-			ObjectDefinition &obj = definitions[collider.object_id];
+			if (x < 0 || z < 0 || x > 95 || z > 95)
+				continue; //Continue if bounds aren't supported for checking.
 
-			float left_x = (collider.x_offset - obj.width) / 80.0f;
-			float bottom_z = (collider.z_offset - obj.depth) / 80.0f;
-			float right_x = (collider.x_offset + obj.width) / 80.0f;
-			float top_z = (collider.z_offset + obj.depth) / 80.0f;
+			int index = x + (z * 96);
+			CollisionIndexList &c = collision_list[index];
 
-			if (verify_point_x >= left_x && verify_point_x <= right_x &&
-				verify_point_z >= bottom_z && verify_point_z <= top_z)
+			if (c.ids == NULL)
+				continue;
+
+			for (int i = 0; i < c.size; ++i)
 			{
+				ColliderChecks &collider = colliders[c.ids[i]];
+				ObjectDefinition &obj = definitions[collider.object_id];
 
-				float a = left_x;
-				float b = top_z;
-				float c = left_x;
-				float d = bottom_z;
+				float left_x = (collider.x_offset - obj.width - COLLISON_PADDING) / 80.0f;
+				float bottom_z = (collider.z_offset - obj.depth - COLLISON_PADDING) / 80.0f;
+				float right_x = (collider.x_offset + obj.width + COLLISON_PADDING) / 80.0f;
+				float top_z = (collider.z_offset + obj.depth + COLLISON_PADDING) / 80.0f;
 
-				bool intersected_left =
-					(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
-						* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
-					&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
-
-				if (intersected_left)
+				if (verify_point_x >= left_x && verify_point_x <= right_x &&
+					verify_point_z >= bottom_z && verify_point_z <= top_z)
 				{
-					ref._3 = verify_point_z;
-					return 2;
-				}
-				a = left_x;
-				b = bottom_z;
-				c = right_x;
-				d = bottom_z;
 
-				bool intersected_bottom =
-					(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
-						* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
-					&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
+					float a = left_x;
+					float b = top_z;
+					float c = left_x;
+					float d = bottom_z;
 
-				if (intersected_bottom)
-				{
-					ref._1 = verify_point_x;
-					return 3;
-				}
-				a = right_x;
-				b = top_z;
-				c = right_x;
-				d = bottom_z;
+					bool intersected_left =
+						(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
+							* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
+						&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
 
-				bool intersected_right =
-					(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
-						* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
-					&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
+					if (intersected_left)
+					{
+						ref._3 = verify_point_z;
+						return 2;
+					}
+					a = left_x;
+					b = bottom_z;
+					c = right_x;
+					d = bottom_z;
 
-				if (intersected_right)
-				{
-					ref._3 = verify_point_z;
-					return 4;
-				}
-				a = left_x;
-				b = top_z;
-				c = right_x;
-				d = top_z;
+					bool intersected_bottom =
+						(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
+							* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
+						&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
 
-				bool intersected_top =
-					(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
-						* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
-					&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
+					if (intersected_bottom)
+					{
+						ref._1 = verify_point_x;
+						return 3;
+					}
+					a = right_x;
+					b = top_z;
+					c = right_x;
+					d = bottom_z;
 
-				if (intersected_top)
-				{
-					ref._1 = verify_point_x;
-					return 1;
+					bool intersected_right =
+						(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
+							* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
+						&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
+
+					if (intersected_right)
+					{
+						ref._3 = verify_point_z;
+						return 4;
+					}
+					a = left_x;
+					b = top_z;
+					c = right_x;
+					d = top_z;
+
+					bool intersected_top =
+						(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
+							* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
+						&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
+
+					if (intersected_top)
+					{
+						ref._1 = verify_point_x;
+						return 1;
+					}
 				}
 			}
 		}
 	}
-
-	if (end_index != start_index)
-	{
-		CollisionIndexList &c2 = collision_list[end_index];
-
-		if (c2.ids == NULL)
-		{
-			ref._1 += move_vector._1;
-			ref._3 += move_vector._2;
-			return 0;
-		}
-
-		for (int i = 0; i < c2.size; ++i)
-		{
-			ColliderChecks &collider = colliders[c2.ids[i]];
-			ObjectDefinition &obj = definitions[collider.object_id];
-
-			float left_x = (collider.x_offset - obj.width) / 80.0f;
-			float bottom_z = (collider.z_offset - obj.depth) / 80.0f;
-			float right_x = (collider.x_offset + obj.width) / 80.0f;
-			float top_z = (collider.z_offset + obj.depth) / 80.0f;
-
-			if (verify_point_x >= left_x && verify_point_x <= right_x &&
-				verify_point_z >= bottom_z && verify_point_z <= top_z)
-			{
-
-				float a = left_x;
-				float b = top_z;
-				float c = left_x;
-				float d = bottom_z;
-
-				bool intersected_left =
-					(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
-						* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
-					&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
-
-				if (intersected_left)
-				{
-					ref._3 = verify_point_z;
-					return 2;
-				}
-				a = left_x;
-				b = bottom_z;
-				c = right_x;
-				d = bottom_z;
-
-				bool intersected_bottom =
-					(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
-						* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
-					&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
-
-				if (intersected_bottom)
-				{
-					ref._1 = verify_point_x;
-					return 3;
-				}
-				a = right_x;
-				b = top_z;
-				c = right_x;
-				d = bottom_z;
-
-				bool intersected_right =
-					(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
-						* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
-					&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
-
-				if (intersected_right)
-				{
-					ref._3 = verify_point_z;
-					return 4;
-				}
-				a = left_x;
-				b = top_z;
-				c = right_x;
-				d = top_z;
-
-				bool intersected_top =
-					(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
-						* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
-					&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
-
-				if (intersected_top)
-				{
-					ref._1 = verify_point_x;
-					return 1;
-				}
-			}
-		}
-	}
-
 	ref._1 += move_vector._1;
 	ref._3 += move_vector._2;
 	return 0;
@@ -405,29 +348,87 @@ __int32 XModelMesh::InsertObjectToMap(Vertex32Byte * verts, int & offset, int id
 		int z_start = z_min / 80;
 		int z_end = z_max / 80;
 
-		int offset = 0;
+		int pot_x_start = (x_min - OBJECT_ACCESS_PADDING) / 80;
+		int pot_x_end = (x_max + OBJECT_ACCESS_PADDING) / 80;
+		int pot_z_start = (z_min - OBJECT_ACCESS_PADDING) / 80;
+		int pot_z_end = (z_max + OBJECT_ACCESS_PADDING) / 80;
+
+		if (pot_x_start < 0)
+			pot_x_start = 0;
+		if (pot_x_end > 95)
+			pot_x_end = 95;
+		if (pot_z_start < 0)
+			pot_z_start = 0;
+		if (pot_z_end > 95)
+			pot_x_end = 95;
+
+		int col_width_pad = (pot_x_end - pot_x_start) + 1;
+		int col_depth_pad = (pot_z_end - pot_z_start) + 1;
 
 		colliders[ID].object_id = id;
 		colliders[ID].height_offset = 0;
 		colliders[ID].x_offset = xunits;
 		colliders[ID].z_offset = zunits;
 
-		for (int x = x_start; x <= x_end; ++x)
+		if (col_width_pad <= 3 && col_depth_pad <= 3)
 		{
-			int index_bottom = x + (z_start * 96);
-			int index_top = x + (z_end * 96);
-
-			collision_list[index_bottom].Insert(ID);
-			collision_list[index_top].Insert(ID);
+			int x = pot_x_start + (col_width_pad == 1 ? 0 : 1);
+			int z = pot_z_start + (col_depth_pad == 1 ? 0 : 1);
+			int index = x + (z * 96);
+			collision_list[index].InsertIfNotContained(ID);
+		} 
+		else if (col_width_pad >= 4 && col_depth_pad >= 4)
+		{
+			if (col_width_pad <= 6 && col_depth_pad <= 6)
+			{
+				int cornerA = (pot_x_start + 1) + ((pot_z_start + 1) * 96);
+				int cornerB = (pot_x_start + 1) + ((pot_z_end - 1) * 96);
+				int cornerC = (pot_x_end - 1) + ((pot_z_start + 1) * 96);
+				int cornerD = (pot_x_end - 1) + ((pot_z_end - 1) * 96);
+				collision_list[cornerA].InsertIfNotContained(ID);
+				collision_list[cornerB].InsertIfNotContained(ID);
+				collision_list[cornerC].InsertIfNotContained(ID);
+				collision_list[cornerD].InsertIfNotContained(ID);
+			} 
+			else
+			{
+				//Unsupported beyond 6x6 depth pads.
+			}
 		}
-
-		for (int z = z_start + 1; z < z_end; ++z)
+		else 
 		{
-			int index_left = x_start + (z * 96);
-			int index_right = x_end + (z * 96);
-
-			collision_list[index_left].Insert(ID);
-			collision_list[index_right].Insert(ID);
+			if (col_width_pad > col_depth_pad)
+			{
+				int z = pot_z_start + (col_depth_pad == 1 ? 0 : 1);
+				int x = pot_x_start;
+				for ( ; x < pot_x_end; x += 3)
+				{
+					int index = x + (z * 96);
+					collision_list[index].InsertIfNotContained(ID);
+				}
+				x += 2;
+				if (x < pot_x_end)
+				{
+					int index = x + (z * 96);
+					collision_list[index].InsertIfNotContained(ID);
+				}
+			}
+			else 
+			{
+				int x = pot_x_start + (col_width_pad == 1 ? 0 : 1);
+				int z = pot_z_start;
+				for ( ; z < pot_z_end; z += 3)
+				{
+					int index = x + (z * 96);
+					collision_list[index].InsertIfNotContained(ID);
+				}
+				z += 2;
+				if (z < pot_z_end)
+				{
+					int index = x + (z * 96);
+					collision_list[index].InsertIfNotContained(ID);
+				}
+			}
 		}
 
 		++ID;

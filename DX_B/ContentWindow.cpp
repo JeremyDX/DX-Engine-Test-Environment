@@ -35,8 +35,8 @@ void ProcessMenuButtons(void)
 		switch (cw.menu_index)
 		{
 			case 0:
-				ContentLoader::ClearWindow();
-				ContentLoader::LoadContentStage(2);
+				//ContentLoader::ClearWindow();
+				//ContentLoader::LoadContentStage(2);
 				break;
 
 			case 1:

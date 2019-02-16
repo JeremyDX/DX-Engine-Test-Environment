@@ -1,3 +1,5 @@
+afxMemDF |= checkAlwaysMemDF;
+
 #include "pch.h"
 
 #include "Engine.h"
@@ -78,7 +80,6 @@ ref class AppSource sealed : IFrameworkViewSource
 		return ref new Main(); 
 	}
 };
-
 
 [MTAThread]
 int main(Array<String^>^ args)

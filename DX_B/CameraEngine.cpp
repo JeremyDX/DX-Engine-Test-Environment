@@ -201,6 +201,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 	if (isJumping)
 	{
+		test._1 = test._2 = 0;
 		updated = true;
 		 
 		if (jump_frame <= 29)
@@ -330,7 +331,14 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 		if (moved)
 		{
-			test._1 = XModelMesh::CheckBasicCollision(player_position, verify);
+			long long t1 = GameTime::CurrentTimeNanos();
+			XModelMesh::CheckBasicCollision(player_position, verify);
+			long long t2 = GameTime::CurrentTimeNanos();
+
+			test._1 = t2 - t1;
+
+			if (test._1 > test._2)
+				test._2 = test._1;
 
 			int angle = rotation_data._2 - rotation_data._3 - rotation_data._4;
 
