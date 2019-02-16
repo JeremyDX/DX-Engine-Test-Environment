@@ -8,7 +8,7 @@ class ContentWindow
 
 	public:	
 		unsigned __int32 background_color;	
-		  signed __int16 background_shader_id; 
+		  signed __int16 background_shader_id = -1; 
 	
 	public:
 		signed __int32 state_change_alias[4];

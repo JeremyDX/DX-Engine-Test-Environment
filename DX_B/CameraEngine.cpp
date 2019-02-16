@@ -31,7 +31,7 @@ Int4 rotation_data;
 
 Float2 blocking_value[4];
 
-int forced_animation_index = 0;
+int64_t forced_animation_index = 0;
 Float4 anim_move_vectors = { 0.0f, 0.0f, 0.0f, 0.0f };
 Float3 base_animation_position = { 0.0f, 0.0f, 0.0f };
 Int2 animation_move_strength = { 0, 0 };
@@ -45,7 +45,7 @@ int VERTICAL_SPEED = 2;
 
 void CreateFinalMatrixResult()
 {
-	static const DirectX::XMMATRIX PROJECTION_MATRIX = DirectX::XMMatrixPerspectiveFovLH(45 * ONE_DEGREE_AS_RADIANS, ScreenManager::ASPECT_RATIO, 0.1F, 300.0F);
+	static const DirectX::XMMATRIX PROJECTION_MATRIX = DirectX::XMMatrixPerspectiveFovLH((float)(45 * ONE_DEGREE_AS_RADIANS), ScreenManager::ASPECT_RATIO, 0.1F, 300.0F);
 	DirectX::XMStoreFloat4x4(&CameraEngine::final_result, DirectX::XMLoadFloat4x4(&camera_matrix) * PROJECTION_MATRIX);
 }
 
@@ -117,7 +117,7 @@ void CameraEngine::BuildPrimaryCameraMatrix()
 
 	float xoffset = (player_position._1);
 	float zoffset = (player_position._3);
-	float height =  (player_position._2 + 1.8);
+	float height =  (player_position._2 + 1.8f);
 
 	//Dot Product (Position, Right Vector).
 	camera_matrix._41 = -(xoffset * camera_matrix._11 + height * camera_matrix._21 + zoffset * camera_matrix._31);
@@ -171,7 +171,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::A_BUTTON))
 	{
-		int change = (current_frame - forced_animation_index);
+		int64_t change = (current_frame - forced_animation_index);
 		if (change > 29)
 		{
 			forced_animation_index = current_frame;
@@ -195,7 +195,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		}
 	}
 
-	int jump_frame = current_frame - forced_animation_index;
+	int64_t jump_frame = current_frame - forced_animation_index;
 	bool isJumping = jump_frame < ref.Length;
 	bool isBlocking = jump_frame < 30;
 
@@ -207,7 +207,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		if (jump_frame <= 29)
 		{
 			//Frames 0 - 28.
-			int value = (196 - ((jump_frame - 14) * (jump_frame - 14))) >> 1;
+			int value = (int)(196 - ((jump_frame - 14) * (jump_frame - 14))) >> 1;
 
 			player_position._2 = base_animation_position._2 + ((float)value / 196);
 
@@ -223,8 +223,8 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		else if (jump_frame <= 39)
 		{
 			//10 Frames.
-			int value = 10 - (jump_frame - 29); 
-			player_position._2 = base_animation_position._2 - (0.0160 * value);
+			int value = 10 - (int)(jump_frame - 29); 
+			player_position._2 = base_animation_position._2 - (float)(0.0160 * value);
 		}
 	}
 
@@ -299,7 +299,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		if (rotation_data._1 > RANGE)
 			rotation_data._1 = RANGE;
 
-		float value = rotation_data._1 * 0.00003125 * ONE_DEGREE_AS_RADIANS;
+		float value = (float)(rotation_data._1 * 0.00003125 * ONE_DEGREE_AS_RADIANS);
 
 		up._1 = (float)sin(value);
 		up._2 = (float)cos(value);
@@ -331,14 +331,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 		if (moved)
 		{
-			long long t1 = GameTime::CurrentTimeNanos();
-			XModelMesh::CheckBasicCollision(player_position, verify);
-			long long t2 = GameTime::CurrentTimeNanos();
-
-			test._1 = t2 - t1;
-
-			if (test._1 > test._2)
-				test._2 = test._1;
+			test._1 = XModelMesh::CheckBasicCollision(player_position, verify);
 
 			int angle = rotation_data._2 - rotation_data._3 - rotation_data._4;
 

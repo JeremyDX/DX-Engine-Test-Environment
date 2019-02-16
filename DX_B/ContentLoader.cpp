@@ -187,7 +187,7 @@ void ContentLoader::LoadSimple2DWorld()
 	fonts[0].CreateGlyphMapping(0);
 
 	//Create Single White Pixel.
-	uint32_t data[1] = { 255 | (255 << 8) | (255 << 16) | (255 << 24) };
+	uint32_t data[1] = { (uint32_t)255 | (uint32_t)(255 << 8) | (uint32_t)(255 << 16) | (uint32_t)(255 << 24) };
 	WritePixelsToShaderIndex(data, 1, 1, 1);
 
 	Float3 v = { CreateShaderColor(1.0f, 1.0f), 1.0f, 1.0f }; //White

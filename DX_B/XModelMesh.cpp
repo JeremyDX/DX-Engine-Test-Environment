@@ -8,7 +8,7 @@
 static const int GRID_SIZE = 96 * 96; //9216;
 static const int MAX_COLLIDERS = 1000;
 static const int COLLISON_PADDING = 20;
-static const int OBJECT_ACCESS_PADDING = 40;
+static const int OBJECT_ACCESS_PADDING = 60;
 static int ID = 0;
 
 struct ObjectDefinition
@@ -55,12 +55,12 @@ struct CollisionIndexList
 			ids = new uint16_t[1]{ id };
 			return true;
 		}
-
+		/*
 		for (int i = 0; i < size; ++i)
 		{
 			if (ids[i] == id)
 				return false;
-		}
+		}*/
 
 		if ((size & (size - 1)) == 0)
 		{
@@ -111,6 +111,8 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector)
 	float verify_point_x = (ref._1 + move_vector._1);
 	float verify_point_z = (ref._3 + move_vector._2);
 
+	int insideEllipse = 0;
+
 	for (int x = beginX; x < beginX + 3; ++x)
 	{
 		for (int z = beginZ; z < beginZ + 3; ++z)
@@ -128,6 +130,23 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector)
 			{
 				ColliderChecks &collider = colliders[c.ids[i]];
 				ObjectDefinition &obj = definitions[collider.object_id];
+
+				if (insideEllipse == 0)
+				{
+					int radial_width = (obj.width + OBJECT_ACCESS_PADDING) * (obj.width + OBJECT_ACCESS_PADDING);
+					int radial_depth = (obj.depth + OBJECT_ACCESS_PADDING) * (obj.depth + OBJECT_ACCESS_PADDING);
+
+					int dx = (collider.x_offset - (int)(ref._1 * 80));
+					int dy = (collider.z_offset - (int)(ref._3 * 80));
+					//8649 = 0.600625
+					//     = 0.2025
+					if (1.0f >= (((dx * dx) / (float)radial_width)) + (((dy * dy) / (float)radial_depth)))
+					{
+						insideEllipse = c.ids[i] + 1;
+					}
+				}
+
+				//80 both directions. 6400
 
 				float left_x = (collider.x_offset - obj.width - COLLISON_PADDING) / 80.0f;
 				float bottom_z = (collider.z_offset - obj.depth - COLLISON_PADDING) / 80.0f;
@@ -204,7 +223,7 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector)
 	}
 	ref._1 += move_vector._1;
 	ref._3 += move_vector._2;
-	return 0;
+	return insideEllipse;
 }
 
 void XModelMesh::TestValues()
@@ -392,42 +411,42 @@ __int32 XModelMesh::InsertObjectToMap(Vertex32Byte * verts, int & offset, int id
 			} 
 			else
 			{
+				int junk3 = 0;
 				//Unsupported beyond 6x6 depth pads.
 			}
 		}
 		else 
 		{
-			if (col_width_pad > col_depth_pad)
+			if (col_width_pad <= 5 && col_depth_pad <= 5)
 			{
-				int z = pot_z_start + (col_depth_pad == 1 ? 0 : 1);
-				int x = pot_x_start;
-				for ( ; x < pot_x_end; x += 3)
+				if (col_width_pad > col_depth_pad)
 				{
-					int index = x + (z * 96);
+					int zz = pot_z_start;
+					if (col_depth_pad > 1)
+						zz += 1;
+
+					int index = pot_x_start + (zz * 96);
+					int index2 = pot_x_end + (zz * 96);
+
 					collision_list[index].InsertIfNotContained(ID);
+					collision_list[index2].InsertIfNotContained(ID);
 				}
-				x += 2;
-				if (x < pot_x_end)
+				else
 				{
-					int index = x + (z * 96);
+					int xx = pot_x_start;
+					if (col_depth_pad > 1)
+						xx += 1;
+
+					int index = xx + (pot_z_start * 96);
+					int index2 = xx + (pot_z_end * 96);
+
 					collision_list[index].InsertIfNotContained(ID);
+					collision_list[index2].InsertIfNotContained(ID);
 				}
 			}
-			else 
-			{
-				int x = pot_x_start + (col_width_pad == 1 ? 0 : 1);
-				int z = pot_z_start;
-				for ( ; z < pot_z_end; z += 3)
-				{
-					int index = x + (z * 96);
-					collision_list[index].InsertIfNotContained(ID);
-				}
-				z += 2;
-				if (z < pot_z_end)
-				{
-					int index = x + (z * 96);
-					collision_list[index].InsertIfNotContained(ID);
-				}
+			else {
+				int junk2 = 0;
+				//Unsupported Padding Beyond (1-3)x(4-5) Sized Objects.
 			}
 		}
 
