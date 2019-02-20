@@ -5,9 +5,13 @@
 #include "ScreenManager.h"
 #include "ContentLoader.h"
 
+const static double ONE_DEGREE_AS_RADIANS = 0.01745329251;
+const static double RADIANS_TO_BIG_DEGREE = 558.50536032;
+
 static const int GRID_SIZE = 96 * 96; //9216;
 static const int MAX_COLLIDERS = 1000;
 static const int COLLISON_PADDING = 20;
+static const int PROMPT_PADDING = 50;
 static const int OBJECT_ACCESS_PADDING = 60;
 static int ID = 0;
 
@@ -55,12 +59,12 @@ struct CollisionIndexList
 			ids = new uint16_t[1]{ id };
 			return true;
 		}
-		/*
+		
 		for (int i = 0; i < size; ++i)
 		{
 			if (ids[i] == id)
 				return false;
-		}*/
+		}
 
 		if ((size & (size - 1)) == 0)
 		{
@@ -103,15 +107,23 @@ void XModelMesh::LoadCollisionData()
 	colliders = new ColliderChecks[MAX_COLLIDERS];
 }
 
-int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector)
+int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_rotation, Int3 &viewport)
 {
 	int beginX = (int)(ref._1 - 1);
 	int beginZ = (int)(ref._3 - 1);
 
-	float verify_point_x = (ref._1 + move_vector._1);
-	float verify_point_z = (ref._3 + move_vector._2);
+	float StartX = ref._1;
+	float StartY = ref._3;
+	float EndX = (ref._1 + move_vector._1);
+	float EndY = (ref._3 + move_vector._2);
 
-	int insideEllipse = 0;
+	int move_angle = (int)((atan2(move_vector._1, move_vector._2) / ONE_DEGREE_AS_RADIANS) * 32000);
+	if (move_angle < 0)
+		move_angle += 11520000;
+	if (move_angle >= 11520000)
+		move_angle -= 11520000;
+
+	//viewport._1 = 0;
 
 	for (int x = beginX; x < beginX + 3; ++x)
 	{
@@ -131,99 +143,232 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector)
 				ColliderChecks &collider = colliders[c.ids[i]];
 				ObjectDefinition &obj = definitions[collider.object_id];
 
-				if (insideEllipse == 0)
-				{
-					int radial_width = (obj.width + OBJECT_ACCESS_PADDING) * (obj.width + OBJECT_ACCESS_PADDING);
-					int radial_depth = (obj.depth + OBJECT_ACCESS_PADDING) * (obj.depth + OBJECT_ACCESS_PADDING);
+				float left = (collider.x_offset - obj.width - COLLISON_PADDING) * 0.0125F;
+				float bottom = (collider.z_offset - obj.depth - COLLISON_PADDING) * 0.0125F;
+				float right = (collider.x_offset + obj.width + COLLISON_PADDING) * 0.0125F;
+				float top = (collider.z_offset + obj.depth + COLLISON_PADDING) * 0.0125F;
 
-					int dx = (collider.x_offset - (int)(ref._1 * 80));
-					int dy = (collider.z_offset - (int)(ref._3 * 80));
-					//8649 = 0.600625
-					//     = 0.2025
+				if (move_angle < 5760000)
+				{
+					if (move_angle < 2880000) 
+					{
+						//Checks if we are moving in the correct direction if not then theres no way we can collide with this object.
+						if (!((StartX <= left && StartY <= top) || (StartY <= bottom && StartX <= right)))
+							continue;
+
+						float MoveDifX = EndX - StartX;
+						float MoveDifY = EndY - StartY;
+
+						float LeftDifX = left - left;
+						float LeftDifY = top - bottom;
+
+						float s = (-MoveDifY * (StartX - left) + MoveDifX * (StartY - bottom));
+						float t = (LeftDifX * (StartY - bottom) - LeftDifY * (StartX - left));
+						float c = (-LeftDifX * MoveDifY + MoveDifX * LeftDifY);
+
+						if (s >= 0 && s <= c && t >= 0 && t <= c)
+						{
+							move_vector._1 = left - StartX;
+							return 0;
+						}
+						else 
+						{
+							float BottomDirX = left - right;
+							float BottomDirY = bottom - bottom;
+
+							s = (-MoveDifY * (StartX - right) + MoveDifX * (StartY - bottom));
+							t = (BottomDirX * (StartY - bottom) - BottomDirY * (StartX - right));
+							c = (-BottomDirX * MoveDifY + MoveDifX * BottomDirY);
+
+							if (s >= 0 && s <= c && t >= 0 && t <= c)
+							{
+								move_vector._2 = bottom - StartY;
+								return 0;
+							}
+						}
+
+						//0-89 Degrees.
+						//Left,Bottom.
+					}
+					else
+					{
+						if (!((StartX <= left && StartY <= top) || (StartY >= top && StartX <= right)))
+							continue;
+
+						float MoveDifX = EndX - StartX;
+						float MoveDifY = EndY - StartY;
+
+						float LeftDifX = left - left;
+						float LeftDifY = top - bottom;
+
+						float s = (-MoveDifY * (StartX - left) + MoveDifX * (StartY - bottom));
+						float t = (LeftDifX * (StartY - bottom) - LeftDifY * (StartX - left));
+						float c = (-LeftDifX * MoveDifY + MoveDifX * LeftDifY);
+
+						if (s >= 0 && s <= c && t >= 0 && t <= c)
+						{
+							move_vector._1 = left - StartX;
+							return 0;
+						}
+						else 
+						{
+							float TopDirX = right - left;
+							float TopDirY = top - top;
+
+							s = (-MoveDifY * (StartX - left) + MoveDifX * (StartY - top));
+							t = (TopDirX * (StartY - top) - TopDirY * (StartX -left));
+							c = (-TopDirX * MoveDifY + MoveDifX * TopDirY);
+
+							if (s >= 0 && s <= c && t >= 0 && t <= c)
+							{
+								move_vector._2 = top - StartY;
+								return 0;
+							}
+						}
+						//90-179 Degrees.
+						//Left, Top.
+					}
+				} else {
+					if (move_angle < 8640000)
+					{
+						if (!((StartX >= right && StartY >= bottom) || (StartY >= top && StartX >= left)))
+							continue;
+
+						float MoveDifX = EndX - StartX;
+						float MoveDifY = EndY - StartY;
+
+						float RightDifX = right - right;
+						float RightDifY = bottom - top;
+
+						float s = (-MoveDifY * (StartX - right) + MoveDifX * (StartY - top));
+						float t = (RightDifX * (StartY - top) - RightDifY * (StartX - right));
+						float c = (-RightDifX * MoveDifY + MoveDifX * RightDifY);
+
+						if (s >= 0 && s <= c && t >= 0 && t <= c)
+						{
+							move_vector._1 = right - StartX;
+							return 0;
+						}
+						else
+						{
+							float TopDirX = right - left;
+							float TopDirY = top - top;
+
+							s = (-MoveDifY * (StartX - left) + MoveDifX * (StartY - top));
+							t = (TopDirX * (StartY - top) - TopDirY * (StartX - left));
+							c = (-TopDirX * MoveDifY + MoveDifX * TopDirY);
+
+							if (s >= 0 && s <= c && t >= 0 && t <= c)
+							{
+								move_vector._2 = top - StartY;
+								return 0;
+							}
+						}
+						//180-269 Degrees.
+						//Right,Top
+					}
+					else 
+					{
+
+						if (!((StartX >= right && StartY >= bottom) || (StartY <= bottom && StartX >= left)))
+							continue;
+
+						float MoveDifX = EndX - StartX;
+						float MoveDifY = EndY - StartY;
+
+						float RightDifX = right - right;
+						float RightDifY = bottom - top;
+
+						float s = (-MoveDifY * (StartX - right) + MoveDifX * (StartY - top));
+						float t = (RightDifX * (StartY - top) - RightDifY * (StartX - right));
+						float c = (-RightDifX * MoveDifY + MoveDifX * RightDifY);
+
+						if (s >= 0 && s <= c && t >= 0 && t <= c)
+						{
+							move_vector._1 = right - StartX;
+							return 0;
+						}
+						else {
+							float BottomDirX = left - right;
+							float BottomDirY = bottom - bottom;
+
+							s = (-MoveDifY * (StartX - right) + MoveDifX * (StartY - bottom));
+							t = (BottomDirX * (StartY - bottom) - BottomDirY * (StartX - right));
+							c = (-BottomDirX * MoveDifY + MoveDifX * BottomDirY);
+
+							if (s >= 0 && s <= c && t >= 0 && t <= c)
+							{
+								move_vector._2 = bottom - StartY;
+								return 0;
+							}
+						}
+						//270-359 Degrees.
+						//Right, Bottom.
+					}
+				}
+					/*
+				if (check_collison)
+				{
+
+				}
+
+				//Action Prompt Checks.
+				if (viewport._1 == -1)
+				{
+					int radial_width = (obj.width + PROMPT_PADDING) * (obj.width + PROMPT_PADDING);
+					int radial_depth = (obj.depth + PROMPT_PADDING) * (obj.depth + PROMPT_PADDING);
+
+					int dx = (collider.x_offset - StartX);
+					int dy = (collider.z_offset - StartY);
+
 					if (1.0f >= (((dx * dx) / (float)radial_width)) + (((dy * dy) / (float)radial_depth)))
 					{
-						insideEllipse = c.ids[i] + 1;
+						bool onleft_right = bottom <= StartY && top >= StartY;
+						bool ontop_bottom = left <= StartX && right >= StartX;
+
+						if (ontop_bottom || onleft_right)
+						{
+
+							if (onleft_right)
+							{
+								bool left = right >= StartX;
+								if (left)
+								{
+									viewport._1 = 1;
+									viewport._2 = 10 * 32000;
+									viewport._3 = 170 * 32000;
+								}
+								else
+								{
+									viewport._1 = 3;
+									viewport._2 = 190 * 32000;
+									viewport._3 = 350 * 32000;
+								}
+							}
+							else
+							{
+								bool bottom = top >= StartY;
+								if (bottom)
+								{
+									viewport._1 = 2;
+									viewport._2 = 280 * 32000;
+									viewport._3 = 80 * 32000;
+								}
+								else
+								{
+									viewport._1 = 0;
+									viewport._2 = 100 * 32000;
+									viewport._3 = 260 * 32000;
+								}
+							}
+						}
 					}
 				}
-
-				//80 both directions. 6400
-
-				float left_x = (collider.x_offset - obj.width - COLLISON_PADDING) / 80.0f;
-				float bottom_z = (collider.z_offset - obj.depth - COLLISON_PADDING) / 80.0f;
-				float right_x = (collider.x_offset + obj.width + COLLISON_PADDING) / 80.0f;
-				float top_z = (collider.z_offset + obj.depth + COLLISON_PADDING) / 80.0f;
-
-				if (verify_point_x >= left_x && verify_point_x <= right_x &&
-					verify_point_z >= bottom_z && verify_point_z <= top_z)
-				{
-
-					float a = left_x;
-					float b = top_z;
-					float c = left_x;
-					float d = bottom_z;
-
-					bool intersected_left =
-						(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
-							* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
-						&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
-
-					if (intersected_left)
-					{
-						ref._3 = verify_point_z;
-						return 2;
-					}
-					a = left_x;
-					b = bottom_z;
-					c = right_x;
-					d = bottom_z;
-
-					bool intersected_bottom =
-						(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
-							* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
-						&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
-
-					if (intersected_bottom)
-					{
-						ref._1 = verify_point_x;
-						return 3;
-					}
-					a = right_x;
-					b = top_z;
-					c = right_x;
-					d = bottom_z;
-
-					bool intersected_right =
-						(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
-							* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
-						&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
-
-					if (intersected_right)
-					{
-						ref._3 = verify_point_z;
-						return 4;
-					}
-					a = left_x;
-					b = top_z;
-					c = right_x;
-					d = top_z;
-
-					bool intersected_top =
-						(((a - ref._1)*(verify_point_z - ref._3) - (b - ref._3)*(verify_point_x - ref._1))
-							* ((c - ref._1)*(verify_point_z - ref._3) - (d - ref._3)*(verify_point_x - ref._1)) < 0)
-						&& (((ref._1 - a)*(d - b) - (ref._3 - b)*(c - a)) * ((verify_point_x - a)*(d - b) - (verify_point_z - b)*(c - a)) < 0);
-
-					if (intersected_top)
-					{
-						ref._1 = verify_point_x;
-						return 1;
-					}
-				}
+			*/
 			}
 		}
 	}
-	ref._1 += move_vector._1;
-	ref._3 += move_vector._2;
-	return insideEllipse;
+	return 0;
 }
 
 void XModelMesh::TestValues()
@@ -329,7 +474,7 @@ __int32 XModelMesh::InsertObjectToMap(Vertex32Byte * verts, int & offset, int id
 	float x = xunits / 80.0f;
 	float y = yunits / 80.0f;
 	float z = zunits / 80.0f;
-	Float3 c = { ContentLoader::CreateShaderColor(0.5f, 0.8f), 1.0f, 1.0f };
+	Float3 c = { ContentLoader::CreateShaderColor(0.5f, 1.0f), 0.5f, 0.5f };
 	ObjectDefinition &obj = definitions[id];
 	for (int i = obj.buffer_begin; i <= obj.buffer_end; ++i)
 	{

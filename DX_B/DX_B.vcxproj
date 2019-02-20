@@ -250,6 +250,7 @@
     <Image Include="Assets\2.png" />
     <Image Include="Assets\2_FONT.PNG" />
     <Image Include="Assets\3_FONT.PNG" />
+    <Image Include="Assets\FloorTiles.PNG" />
     <Image Include="Assets\Image_0.PNG" />
     <Image Include="Assets\Image_1.png" />
     <Image Include="Assets\Image_2.PNG" />
@@ -260,7 +261,6 @@
   <ItemGroup>
     <ClInclude Include="Animation.h" />
     <ClInclude Include="CameraEngine.h" />
-    <ClInclude Include="Collision.h" />
     <ClInclude Include="ContentLoader.h" />
     <ClInclude Include="ContentOverlay.h" />
     <ClInclude Include="Engine.h" />

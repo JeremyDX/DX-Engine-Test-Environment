@@ -48,7 +48,6 @@
     <ClInclude Include="Animation.h" />
     <ClInclude Include="Landscape.h" />
     <ClInclude Include="ContentOverlay.h" />
-    <ClInclude Include="Collision.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\0_FONT.PNG">
@@ -85,6 +84,9 @@
       <Filter>Assets</Filter>
     </Image>
     <Image Include="Assets\SMILEY512.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\FloorTiles.PNG">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>

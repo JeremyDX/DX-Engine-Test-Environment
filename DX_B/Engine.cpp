@@ -299,7 +299,7 @@ void Render()
 
 	if (ContentLoader::ALLOW_3D_PROCESSING)
 	{
-		Engine::context->PSSetShaderResources(0, 1, ContentLoader::GetTextureAddress(0));
+		Engine::context->PSSetShaderResources(0, 1, ContentLoader::GetTextureAddress(3));
 		Engine::context->PSSetSamplers(0, 1, sampler.GetAddressOf());
 
 		Engine::context->UpdateSubresource(d3d_const_buffer.Get(), 0, 0, &CameraEngine::final_result, 0, 0);

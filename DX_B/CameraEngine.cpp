@@ -28,6 +28,7 @@ Float3 player_position;
 
 //The Look Left/Right Rotation and Look Up/Down Rotation
 Int4 rotation_data;
+Int3 prompt_viewport;
 
 Float2 blocking_value[4];
 
@@ -58,6 +59,10 @@ void CameraEngine::ResetPrimaryCameraMatrix(const int FACE_DIRECTION)
 	rotation_data._1 = 0;
 	rotation_data._2 = rotation_data._3 = FACE_DIRECTION * 32000;
 	rotation_data._4 = 0;
+
+	prompt_viewport._1 = -1;
+	prompt_viewport._2 =  0;
+	prompt_viewport._3 =  0;
 
 	up._1 = 0.0f;
 	up._2 = 1.0f;
@@ -130,6 +135,29 @@ void CameraEngine::BuildPrimaryCameraMatrix()
 
 }
 
+void CameraEngine::UpdatePromptView()
+{
+	if (prompt_viewport._1 != -1)
+	{
+		if (prompt_viewport._2 > prompt_viewport._3)
+		{
+			if (rotation_data._2 > prompt_viewport._2 || rotation_data._2 < prompt_viewport._3)
+			{
+				test._1 = prompt_viewport._1;
+			}
+		}
+		else
+		{
+			if (rotation_data._2 > prompt_viewport._2 && rotation_data._2 < prompt_viewport._3)
+			{
+				test._1 = prompt_viewport._1;
+			}
+		}
+	}
+}
+
+bool teleport_animation_collided = false;
+
 bool CameraEngine::PrimaryCameraUpdatedLookAt()
 {
 	//This is to ensure we only perform 1 frame of data, in event we are running too quick it won't do anything.
@@ -201,11 +229,14 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 	if (isJumping)
 	{
-		test._1 = test._2 = 0;
 		updated = true;
+
+		Float2 verify = { 0.0f, 0.0f };
 		 
 		if (jump_frame <= 29)
 		{
+			test._1 = test._2 = 0.0f;
+
 			//Frames 0 - 28.
 			int value = (int)(196 - ((jump_frame - 14) * (jump_frame - 14))) >> 1;
 
@@ -214,11 +245,17 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 			float r_strength = (float)(animation_move_strength._1 * (jump_frame + 1)) / 600000L;
 			float f_strength = (float)(animation_move_strength._2 * (jump_frame + 1)) / 600000L;
 
-			player_position._1 = base_animation_position._1 + r_strength * anim_move_vectors._1;
-			player_position._3 = base_animation_position._3 + r_strength * anim_move_vectors._2;
+			verify._1 = r_strength * anim_move_vectors._1;
+			verify._2 = r_strength * anim_move_vectors._2;
 
-			player_position._1 = player_position._1 + f_strength * anim_move_vectors._3;
-			player_position._3 = player_position._3 + f_strength * anim_move_vectors._4;
+			verify._1 = verify._1 + (f_strength * anim_move_vectors._3);
+			verify._2 = verify._2 + (f_strength * anim_move_vectors._4);
+
+			int result = XModelMesh::CheckBasicCollision(base_animation_position, verify, rotation_data._2, prompt_viewport);
+
+			player_position._1 = base_animation_position._1 + verify._1;
+			player_position._3 = base_animation_position._3 + verify._2;
+
 		} 
 		else if (jump_frame <= 39)
 		{
@@ -226,6 +263,8 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 			int value = 10 - (int)(jump_frame - 29); 
 			player_position._2 = base_animation_position._2 - (float)(0.0160 * value);
 		}
+
+		UpdatePromptView();
 	}
 
 	//If the player did in fact turn update the camera movement vectors. 
@@ -249,6 +288,7 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		}
 
 		bool rotated = angle >= 2880000 || angle <= -2880000;
+
 		if (rotated)
 		{
 			if (angle < 0)
@@ -273,6 +313,8 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 			rotation_data._2 = rotation_data._3;
 		}
+		
+		UpdatePromptView();
 
 		double rotation = rotation_data._2 * 0.00003125 * ONE_DEGREE_AS_RADIANS;
 
@@ -321,6 +363,9 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 			moved = true;
 		}
 
+		//125 Frames = 80 CM = 1 Unit.
+		//18.31 Frames = 80 CM = 1 Unit.
+
 		if (abs_right > DEAD_ZONE)
 		{
 			float strength = (float)(right_strength * delta_frame) / 600000L;
@@ -331,7 +376,25 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 		if (moved)
 		{
-			test._1 = XModelMesh::CheckBasicCollision(player_position, verify);
+			int64_t t1 = GameTime::CurrentTimeNanos();
+			XModelMesh::CheckBasicCollision(player_position, verify, rotation_data._2, prompt_viewport);
+			player_position._1 += verify._1;
+			player_position._3 += verify._2;
+			int64_t t2 = GameTime::CurrentTimeNanos();
+
+			ContentLoader::UpdateOverlayString(2, "Max Time: ");
+			ContentLoader::UpdateOverlayString(4, "Cur Time: ");
+			test._2 = t2 - t1;
+			if (test._1 < test._2)
+				test._1 = test._2;
+			char buffer[12];
+			snprintf(buffer, 7, "%f", test._1);
+			ContentLoader::UpdateOverlayString(3, buffer);
+
+			snprintf(buffer, 7, "%f", test._2);
+			ContentLoader::UpdateOverlayString(5, buffer);
+
+			UpdatePromptView();
 
 			int angle = rotation_data._2 - rotation_data._3 - rotation_data._4;
 
@@ -375,23 +438,40 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 void CameraEngine::CreateDebugOverlay()
 {
+	/*
 	char buffer[12];
 
 	snprintf(buffer, 12, "%f", player_position._1);
-	ContentLoader::UpdateOverlayString(13 * 6, buffer, 12 * 6);
+	ContentLoader::UpdateOverlayString(1, buffer);
 
 	snprintf(buffer, 12, "%f", player_position._2);
-	ContentLoader::UpdateOverlayString(38 * 6, buffer, 12 * 6);
+	ContentLoader::UpdateOverlayString(3, buffer);
 
 	snprintf(buffer, 12, "%f", player_position._3);
-	ContentLoader::UpdateOverlayString(63 * 6, buffer, 12 * 6);
+	ContentLoader::UpdateOverlayString(5, buffer);
 
-	snprintf(buffer, 12, "%f", 0.0f);
-	ContentLoader::UpdateOverlayString(89 * 6, buffer, 12 * 6);
+	if (test._1 >= -1.0f)
+	{
 
-	snprintf(buffer, 12, "%f", test._1);
-	ContentLoader::UpdateOverlayString(115 * 6, buffer, 12 * 6);
+		snprintf(buffer, 12, "%d", prompt_viewport._1);
+		ContentLoader::UpdateOverlayString(7, buffer);
 
-	snprintf(buffer, 12, "%f", test._2);
-	ContentLoader::UpdateOverlayString(138 * 6, buffer, 12 * 6);
+		snprintf(buffer, 12, "%d", prompt_viewport._2);
+		ContentLoader::UpdateOverlayString(9, buffer);
+
+		snprintf(buffer, 12, "%d", prompt_viewport._3);
+		ContentLoader::UpdateOverlayString(11, buffer);
+
+	}
+	else {
+		snprintf(buffer, 12, "%f", test._1);
+		ContentLoader::UpdateOverlayString(7, buffer);
+
+		snprintf(buffer, 12, "%d", 0);
+		ContentLoader::UpdateOverlayString(9, buffer);
+
+		snprintf(buffer, 12, "%d", 0);
+		ContentLoader::UpdateOverlayString(11, buffer);
+	}
+	*/
 }

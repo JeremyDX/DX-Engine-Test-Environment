@@ -3,10 +3,20 @@
 #include "ContentLoader.h"
 #include "ScreenManager.h"
 
+static int font_incrementer_index = 0;
+
+
+void FontResource::ResetIncrementer()
+{
+	font_incrementer_index = 0;
+}
+
 //This is hard coded until we can get a Cache file and Process Reading From That...
 //TO DO IN FUTURE :)
 void FontResource::CreateGlyphMapping(int mapping_id)
 {
+	font_index = font_incrementer_index++;
+
 	if (mapping_id == 0)
 	{
 		font_size = 38;
@@ -122,15 +132,21 @@ int32_t FontResource::MeasureString(const char *text)
 	return width;
 }
 
-int32_t FontResource::UpdateBufferString(int vert_offset, const char *text, static Vertex32Byte *verts)
+void FontResource::UpdateBufferString(int packed_data, const char *text, static Vertex32Byte *verts)
 {
+	int packed_position = packed_data >> 6;
+	int packed_length = packed_data & 63;
+
 	int length = strlen(text);
+
+	if (length > packed_length)
+		length = packed_length;
 
 	float view_width = (float)ScreenManager::PREFERRED_CANVAS_WIDTH;
 	float view_height = (float)ScreenManager::PREFERRED_CANVAS_HEIGHT;
 
-	float offsetX = (1.0f + (verts[vert_offset]._X)) * (view_width / 2);
-	float offsetY = (1.0f - (verts[vert_offset]._Y));
+	float offsetX = (1.0f + (verts[packed_position]._X)) * (view_width / 2);
+	float offsetY = (1.0f - (verts[packed_position]._Y));
 
 	Float3 color = { ContentLoader::CreateShaderColor(1.0f, 0.5f), 1.0f, 1.0f };
 
@@ -159,54 +175,41 @@ int32_t FontResource::UpdateBufferString(int vert_offset, const char *text, stat
 
 		offsetX += charWidth;
 
-		verts[vert_offset++] = { left,  top,    0.0f,	color._1, color._2, color._3,	uL, vT }; //Top Left.
-		verts[vert_offset++] = { right, bottom, 0.0f,	color._1, color._2, color._3,	uR, vB }; //Bottom Right.
-		verts[vert_offset++] = { left,  bottom, 0.0f,	color._1, color._2, color._3,	uL, vB }; //Bottom Left.
+		verts[packed_position++] = { left,  top,    0.0f,	color._1, color._2, color._3,	uL, vT }; //Top Left.
+		verts[packed_position++] = { right, bottom, 0.0f,	color._1, color._2, color._3,	uR, vB }; //Bottom Right.
+		verts[packed_position++] = { left,  bottom, 0.0f,	color._1, color._2, color._3,	uL, vB }; //Bottom Left.
 
-		verts[vert_offset++] = { right, bottom, 0.0f,	color._1, color._2, color._3,	uR, vB }; //Bottom Right.
-		verts[vert_offset++] = { left,  top,    0.0f,	color._1, color._2, color._3,	uL, vT }; //Top Left.
-		verts[vert_offset++] = { right, top,    0.0f,	color._1, color._2, color._3,	uR, vT }; //Top Right.
+		verts[packed_position++] = { right, bottom, 0.0f,	color._1, color._2, color._3,	uR, vB }; //Bottom Right.
+		verts[packed_position++] = { left,  top,    0.0f,	color._1, color._2, color._3,	uL, vT }; //Top Left.
+		verts[packed_position++] = { right, top,    0.0f,	color._1, color._2, color._3,	uR, vT }; //Top Right.
 	}
 
-	return vert_offset;
+	int clearing_size = 6 * (packed_length - length);
+
+	for (int j = 0; j < clearing_size; ++j)
+	{
+		verts[packed_position++]._Z = -32768.0f;
+	}
 }
 
-int32_t FontResource::AddStringToBuffer(static const wchar_t *text, static Vertex32Byte *verts, Float3 color, int vert_offset, int draw_offsetX, int draw_offsetY, int alignment)
+int32_t FontResource::AddStringToOverlay(const char * text, int padding_skip, Vertex32Byte * verts, ContentOverlay & overlay, int & vertex_offset, Float3 & color, int draw_offsetX, int draw_offsetY)
 {
-	int length = wcslen(text);
+	int length = strlen(text);
+
+	if (length > padding_skip)
+		length = padding_skip;
+
+	overlay.Insert((font_index << 21) | (vertex_offset << 6) | padding_skip);
 
 	float view_width = (float)ScreenManager::PREFERRED_CANVAS_WIDTH;
 	float view_height = (float)ScreenManager::PREFERRED_CANVAS_HEIGHT;
 
-	int stringWidth = MeasureString(text);
-
-	float align = 0.0F;
-	if (alignment == 1)
-	{
-		align = view_width / 2;
-		align -= stringWidth / 2;
-	}
-	else {
-		align = view_width;
-		align -= stringWidth;
-	}
-	align += draw_offsetX;
-
-	int offsetX = align;
+	int offsetX = draw_offsetX;
 	float offsetY = (float)(draw_offsetY * 2) / view_height;
-
-	++string_position;
 
 	for (int n = 0; n < length; ++n)
 	{
-
 		int glyphId = (int)text[n] - 32;
-		if (glyphId == -22)
-		{
-			offsetY += (2 * (font_size)) / view_height;
-			offsetX = align;
-			continue;
-		}
 
 		int charWidth = glyph_positions[glyphId] - 1;
 		if (glyphId % 16 != 0)
@@ -229,18 +232,32 @@ int32_t FontResource::AddStringToBuffer(static const wchar_t *text, static Verte
 
 		offsetX += charWidth;
 
-		verts[vert_offset++] = { left,  top,    0.0f,	color._1, color._2, color._3,	uL, vT }; //Top Left.
-		verts[vert_offset++] = { right, bottom, 0.0f,	color._1, color._2, color._3,	uR, vB }; //Bottom Right.
-		verts[vert_offset++] = { left,  bottom, 0.0f,	color._1, color._2, color._3,	uL, vB }; //Bottom Left.
+		verts[vertex_offset++] = { left,  top,    0.0f,	color._1, color._2, color._3,	uL, vT }; //Top Left.
+		verts[vertex_offset++] = { right, bottom, 0.0f,	color._1, color._2, color._3,	uR, vB }; //Bottom Right.
+		verts[vertex_offset++] = { left,  bottom, 0.0f,	color._1, color._2, color._3,	uL, vB }; //Bottom Left.
 
-		verts[vert_offset++] = { right, bottom, 0.0f,	color._1, color._2, color._3,	uR, vB }; //Bottom Right.
-		verts[vert_offset++] = { left,  top,    0.0f,	color._1, color._2, color._3,	uL, vT }; //Top Left.
-		verts[vert_offset++] = { right, top,    0.0f,	color._1, color._2, color._3,	uR, vT }; //Top Right.
+		verts[vertex_offset++] = { right, bottom, 0.0f,	color._1, color._2, color._3,	uR, vB }; //Bottom Right.
+		verts[vertex_offset++] = { left,  top,    0.0f,	color._1, color._2, color._3,	uL, vT }; //Top Left.
+		verts[vertex_offset++] = { right, top,    0.0f,	color._1, color._2, color._3,	uR, vT }; //Top Right.
 	}
-	return vert_offset;
+
+	int clearing_size = 6 * (padding_skip - length);
+
+	if (clearing_size > 0)
+	{
+		verts[vertex_offset]._X = -1.0f + ((2 * (offsetX)) / view_width);
+		verts[vertex_offset]._Y =  1.0F - offsetY;
+
+		for (int j = 0; j < clearing_size; ++j)
+		{
+			verts[vertex_offset++]._Z = -32768.0f;
+		}
+	}
+
+	return offsetX;
 }
 
-int32_t FontResource::AddStringToBuffer(static const char *text, static Vertex32Byte *verts, Float3 color, int vert_offset, int draw_offsetX, int draw_offsetY, int alignment)
+int32_t FontResource::AddStringToBuffer(const char *text, Vertex32Byte *verts, Float3 &color, int vert_offset, int draw_offsetX, int draw_offsetY)
 {
 	int length = strlen(text);
 	float view_width = (float)ScreenManager::PREFERRED_CANVAS_WIDTH;
@@ -248,22 +265,8 @@ int32_t FontResource::AddStringToBuffer(static const char *text, static Vertex32
 
 	int stringWidth = MeasureString(text);
 
-	float align = 0.0F;
-	if (alignment == 1)
-	{
-		align = view_width / 2;
-		align -= stringWidth / 2;
-	} else {
-		align = view_width;
-		align -= stringWidth;
-	}
-	align += draw_offsetX;
-
-	int offsetX = align;
+    int offsetX = draw_offsetX;
 	float offsetY = (float)(draw_offsetY * 2) / view_height;
-
-	//packedfontdata[string_position] = ((vertexposition / 6) << 6) + (length & 0x3F);
-	++string_position;
 
 	for (int n = 0; n < length; ++n)
 	{

@@ -138,6 +138,8 @@ void RestartHeaderSize(int total_interfaces, int total_overlays, int total_fonts
 	if (max_fonts != 0)
 		delete[] fonts;
 
+	FontResource::ResetIncrementer();
+
 	if (max_textures != 0)
 	{
 		for (int i = 0; i < max_textures; ++i)
@@ -202,8 +204,8 @@ void ContentLoader::LoadSimple2DWorld()
 
 		//Set First Texture Used.
 		//Then Add Data To Present.
-		static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"2D Environement Overlay Testing", OverlayVerts, v, static_overlay_buffer_size, -400, 50, 0);
-		static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Hold ; To Return To Menu.", OverlayVerts, v, static_overlay_buffer_size, -600, 90, 0);
+		static_overlay_buffer_size = fonts[0].AddStringToBuffer("2D Environement Overlay Testing", OverlayVerts, v, static_overlay_buffer_size, 0, 50);
+		static_overlay_buffer_size = fonts[0].AddStringToBuffer("Hold ; To Return To Menu.", OverlayVerts, v, static_overlay_buffer_size, 200, 90);
 
 		overlay.total_textures = 1;
 		overlay.texture_index[0] = 0;
@@ -246,11 +248,12 @@ void ContentLoader::LoadSimple2DWorld()
 
 void ContentLoader::LoadWorldStage()
 {
-	RestartHeaderSize(0, 1, 1, 3);
+	RestartHeaderSize(0, 1, 1, 4);
 
 	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/SMILEY512.png", nullptr, &texture_resources[0], 0);
 	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/RGB_TransparencyMap.png", nullptr, &texture_resources[1], 0);
 	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/3_FONT.png", nullptr, &texture_resources[2], 0);
+	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/FloorTiles.PNG", nullptr, &texture_resources[3], 0);
 	
 	Engine::context->GenerateMips(texture_resources[0]);
 	Engine::context->GenerateMips(texture_resources[1]);
@@ -310,25 +313,37 @@ void ContentLoader::LoadWorldStage()
 	static_overlay_buffer_size = 0;
 
 	//Set Overlay Update Index and Total Texture Count.
-	overlays[0].SetUpdateProc(2);
-	overlays[0].total_textures = 2;
+	ContentOverlay &ow = overlays[0];
+
+	ow.SetUpdateProc(2);
+	ow.total_textures = 2;
 
 	//Set First Texture Used.
 	//Then Add Data To Present.
-	overlays[0].texture_index[0] = 2;
-	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Position X : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 20, 0);
-	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Position Y : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 60, 0);
-	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Position Z : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 100, 0);
-	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"UpperLeft X : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 140, 0);
-	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"UpperLeft Z : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 180, 0);
-	static_overlay_buffer_size = fonts[0].AddStringToBuffer(L"Rotation : 000000000000", OverlayVerts, v, static_overlay_buffer_size, 0, 220, 0);
+	ow.texture_index[0] = 2;
 
+	int drawX = fonts[0].AddStringToOverlay("PositionX: ", 12, OverlayVerts, ow, static_overlay_buffer_size, v, 0, 60);
+	fonts[0].AddStringToOverlay("", 12, OverlayVerts, ow, static_overlay_buffer_size, v, drawX, 60);
 
+	drawX = fonts[0].AddStringToOverlay("PositionY: ", 12, OverlayVerts, ow, static_overlay_buffer_size, v, 0, 100);
+	fonts[0].AddStringToOverlay("", 12, OverlayVerts, ow, static_overlay_buffer_size, v, drawX, 100);
+
+	drawX = fonts[0].AddStringToOverlay("PositionZ: ", 12, OverlayVerts, ow, static_overlay_buffer_size, v, 0, 140);
+	fonts[0].AddStringToOverlay("", 12, OverlayVerts, ow, static_overlay_buffer_size, v, drawX, 140);
+
+	drawX = fonts[0].AddStringToOverlay("PromptViewID: ", 12, OverlayVerts, ow, static_overlay_buffer_size, v, 0, 180);
+	fonts[0].AddStringToOverlay("", 12, OverlayVerts, ow, static_overlay_buffer_size, v, drawX, 180);
+
+	drawX = fonts[0].AddStringToOverlay("PromptViewMin: ", 16, OverlayVerts, ow, static_overlay_buffer_size, v, 0, 220);
+	fonts[0].AddStringToOverlay("", 12, OverlayVerts, ow, static_overlay_buffer_size, v, drawX, 220);
+
+	drawX = fonts[0].AddStringToOverlay("PromptViewMax: ", 16, OverlayVerts, ow, static_overlay_buffer_size, v, 0, 260);
+	fonts[0].AddStringToOverlay("", 12, OverlayVerts, ow, static_overlay_buffer_size, v, drawX, 260);
 
 	//Set The Next Texture Used.
 	//Set The Offset From Last Data.
-	overlays[0].texture_index[1] = 0;
-	overlays[0].offsets[0] = static_overlay_buffer_size;
+	ow.texture_index[1] = 0;
+	ow.offsets[0] = static_overlay_buffer_size;
 
 	v = { CreateShaderColor(1.0f, 0.9f), 1.0f, 1.0f }; //Blocking Box.
 	static_overlay_buffer_size = XModelMesh::CreateTexturedSquare(OverlayVerts, static_overlay_buffer_size, v, 1, 1, 500, 500);
@@ -388,8 +403,8 @@ void ContentLoader::LoadMenuStage()
 	Float3 v = { CreateShaderColor(1.0f, 1.0f), 1.0f, 1.0f};
 
 	int begin = 6;
-	int offset = fonts[1].AddStringToBuffer(L"Developed By", InterfaceVerts, v, 6, 0, 50, 1);
-	offset = fonts[1].AddStringToBuffer(L"Jeremy DX", InterfaceVerts, v, offset, 0, 300, 1);
+	int offset = fonts[1].AddStringToBuffer("Developed By", InterfaceVerts, v, 6, 0, 50);
+	offset = fonts[1].AddStringToBuffer("Jeremy DX", InterfaceVerts, v, offset, 0, 300);
 
 	interfaces[0].state_changes = 1;
 	interfaces[0].state_change_alias[0] = 2;
@@ -399,12 +414,12 @@ void ContentLoader::LoadMenuStage()
 
 	begin = offset;
 
-	offset = fonts[3].AddStringToBuffer(L"This Engine Is In Testing Phase", InterfaceVerts, v, offset, 0, 100, 1);
-	offset = fonts[3].AddStringToBuffer(L"\n\nCurrently testing Content Loading", InterfaceVerts, v, offset, 0, 100, 1);
-	offset = fonts[3].AddStringToBuffer(L"\n\n\n\nYou can press any button to continue.", InterfaceVerts, v, offset, 0, 100, 1);
+	offset = fonts[3].AddStringToBuffer("This Engine Is In Testing Phase", InterfaceVerts, v, offset, 0, 100);
+	offset = fonts[3].AddStringToBuffer("\n\nCurrently testing Content Loading", InterfaceVerts, v, offset, 0, 100);
+	offset = fonts[3].AddStringToBuffer("\n\n\n\nYou can press any button to continue.", InterfaceVerts, v, offset, 0, 100);
 
-	offset = fonts[3].AddStringToBuffer(L"Project Source: https://github.com/JeremyDX/DX_B ", InterfaceVerts, v, offset, 0, 450, 1);
-	offset = fonts[3].AddStringToBuffer(L"YouTube Channel: https://www.youtube.com/user/DxXNA/", InterfaceVerts, v, offset, 0, 500, 1);
+	offset = fonts[3].AddStringToBuffer("Project Source: https://github.com/JeremyDX/DX_B ", InterfaceVerts, v, offset, 0, 450);
+	offset = fonts[3].AddStringToBuffer("YouTube Channel: https://www.youtube.com/user/DxXNA/", InterfaceVerts, v, offset, 0, 500);
 
 	interfaces[1].state_changes = 1;
 	interfaces[1].state_change_alias[0] = 4;
@@ -415,8 +430,8 @@ void ContentLoader::LoadMenuStage()
 	begin = offset;
 
 	Float3 Green = { CreateShaderColor(0.0f, 1.0f), 1.0f, 0.0F };
-	offset = fonts[1].AddStringToBuffer(L"Undead Survival", InterfaceVerts, v, offset, 0, 10, 1);
-	offset = fonts[1].AddStringToBuffer(L"Game Engine", InterfaceVerts, v, offset, 0, 130, 1);
+	offset = fonts[1].AddStringToBuffer("Undead Survival", InterfaceVerts, v, offset, 0, 10);
+	offset = fonts[1].AddStringToBuffer("Game Engine", InterfaceVerts, v, offset, 0, 130);
 
 	interfaces[2].state_vertex_offsets[0] = begin;
 	interfaces[2].state_vertex_sizes[0] = offset - begin;
@@ -471,11 +486,13 @@ void ContentLoader::RotateOverlayTexture(int begin, Float2 verts[4])
 	OverlayVerts[begin + 5]._Y = verts[0]._2;
 }
 
-void ContentLoader::UpdateOverlayString(int begin, const char* text, int zeroing_size)
+void ContentLoader::UpdateOverlayString(int children_id, const char* text)
 {
-	int offset = fonts[0].UpdateBufferString(begin, text, OverlayVerts);
-	for (int j = offset; j < (begin + zeroing_size); ++j)
-		OverlayVerts[j]._Z = -32768.0f;
+	int value = overlays[s_index].components[children_id];
+
+	FontResource &font = fonts[value >> 21];
+
+	font.UpdateBufferString(value - ((value >> 21) << 21) , text, OverlayVerts);
 }
 
 void ContentLoader::SwapQuadsPosition(int offset_a, int offset_b)
