@@ -89,6 +89,9 @@
     <Image Include="Assets\FloorTiles.PNG">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\HM256.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

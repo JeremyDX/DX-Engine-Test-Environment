@@ -107,6 +107,11 @@ void XModelMesh::LoadCollisionData()
 	colliders = new ColliderChecks[MAX_COLLIDERS];
 }
 
+void XModelMesh::CheckResolutionCollision(Float3 &ref, Float2 &move_vector, int result)
+{
+
+}
+
 int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_rotation, Int3 &viewport)
 {
 	int beginX = (int)(ref._1 - 1);
@@ -117,6 +122,30 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_r
 	float EndX = (ref._1 + move_vector._1);
 	float EndY = (ref._3 + move_vector._2);
 
+	int absX = EndX - StartX;
+	int absY = EndY - StartY;
+
+	int a, b, c, d;
+	if (absX < 0)
+	{
+		a = absX;
+		b = 0;
+	}
+	else {
+		a = 0;
+		b = absX;
+	}
+
+	if (absY < 0)
+	{
+		c = absY;
+		d = 0;
+	}
+	else {
+		c = 0;
+		d = absY;
+	}
+
 	int move_angle = (int)((atan2(move_vector._1, move_vector._2) / ONE_DEGREE_AS_RADIANS) * 32000);
 	if (move_angle < 0)
 		move_angle += 11520000;
@@ -125,9 +154,9 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_r
 
 	//viewport._1 = 0;
 
-	for (int x = beginX; x < beginX + 3; ++x)
+	for (int x = beginX + a; x < beginX + 3 + b; ++x)
 	{
-		for (int z = beginZ; z < beginZ + 3; ++z)
+		for (int z = beginZ + c; z < beginZ + 3 + d; ++z)
 		{
 			if (x < 0 || z < 0 || x > 95 || z > 95)
 				continue; //Continue if bounds aren't supported for checking.
@@ -150,11 +179,11 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_r
 
 				if (move_angle < 5760000)
 				{
-					if (move_angle < 2880000) 
+					if (move_angle < 2880000)
 					{
 						//Checks if we are moving in the correct direction if not then theres no way we can collide with this object.
-						if (!((StartX <= left && StartY <= top) || (StartY <= bottom && StartX <= right)))
-							continue;
+						//if (!((StartX <= left && StartY <= top) || (StartY <= bottom && StartX <= right)))
+						//	continue;
 
 						float MoveDifX = EndX - StartX;
 						float MoveDifY = EndY - StartY;
@@ -162,16 +191,16 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_r
 						float LeftDifX = left - left;
 						float LeftDifY = top - bottom;
 
-						float s = (-MoveDifY * (StartX - left) + MoveDifX * (StartY - bottom));
-						float t = (LeftDifX * (StartY - bottom) - LeftDifY * (StartX - left));
-						float c = (-LeftDifX * MoveDifY + MoveDifX * LeftDifY);
+						double s = (-MoveDifY * (StartX - left) + MoveDifX * (StartY - bottom));
+						double t = (LeftDifX * (StartY - bottom) - LeftDifY * (StartX - left));
+						double c = (-LeftDifX * MoveDifY + MoveDifX * LeftDifY);
 
 						if (s >= 0 && s <= c && t >= 0 && t <= c)
 						{
-							move_vector._1 = left - StartX;
-							return 0;
+							move_vector._1 = 0.0f;
+							return 1;
 						}
-						else 
+						else
 						{
 							float BottomDirX = left - right;
 							float BottomDirY = bottom - bottom;
@@ -182,8 +211,8 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_r
 
 							if (s >= 0 && s <= c && t >= 0 && t <= c)
 							{
-								move_vector._2 = bottom - StartY;
-								return 0;
+								move_vector._2 = 0.0f;
+								return 2;
 							}
 						}
 
@@ -192,8 +221,8 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_r
 					}
 					else
 					{
-						if (!((StartX <= left && StartY <= top) || (StartY >= top && StartX <= right)))
-							continue;
+						//if (!((StartX <= left && StartY <= top) || (StartY >= top && StartX <= right)))
+						//	continue;
 
 						float MoveDifX = EndX - StartX;
 						float MoveDifY = EndY - StartY;
@@ -207,47 +236,8 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_r
 
 						if (s >= 0 && s <= c && t >= 0 && t <= c)
 						{
-							move_vector._1 = left - StartX;
-							return 0;
-						}
-						else 
-						{
-							float TopDirX = right - left;
-							float TopDirY = top - top;
-
-							s = (-MoveDifY * (StartX - left) + MoveDifX * (StartY - top));
-							t = (TopDirX * (StartY - top) - TopDirY * (StartX -left));
-							c = (-TopDirX * MoveDifY + MoveDifX * TopDirY);
-
-							if (s >= 0 && s <= c && t >= 0 && t <= c)
-							{
-								move_vector._2 = top - StartY;
-								return 0;
-							}
-						}
-						//90-179 Degrees.
-						//Left, Top.
-					}
-				} else {
-					if (move_angle < 8640000)
-					{
-						if (!((StartX >= right && StartY >= bottom) || (StartY >= top && StartX >= left)))
-							continue;
-
-						float MoveDifX = EndX - StartX;
-						float MoveDifY = EndY - StartY;
-
-						float RightDifX = right - right;
-						float RightDifY = bottom - top;
-
-						float s = (-MoveDifY * (StartX - right) + MoveDifX * (StartY - top));
-						float t = (RightDifX * (StartY - top) - RightDifY * (StartX - right));
-						float c = (-RightDifX * MoveDifY + MoveDifX * RightDifY);
-
-						if (s >= 0 && s <= c && t >= 0 && t <= c)
-						{
-							move_vector._1 = right - StartX;
-							return 0;
+							move_vector._1 = 0.0f;
+							return 1;
 						}
 						else
 						{
@@ -260,18 +250,19 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_r
 
 							if (s >= 0 && s <= c && t >= 0 && t <= c)
 							{
-								move_vector._2 = top - StartY;
-								return 0;
+								move_vector._2 = 0.0f;
+								return 4;
 							}
 						}
-						//180-269 Degrees.
-						//Right,Top
+						//90-179 Degrees.
+						//Left, Top.
 					}
-					else 
+				}
+				else {
+					if (move_angle < 8640000)
 					{
-
-						if (!((StartX >= right && StartY >= bottom) || (StartY <= bottom && StartX >= left)))
-							continue;
+						//if (!((StartX >= right && StartY >= bottom) || (StartY >= top && StartX >= left)))
+						//	continue;
 
 						float MoveDifX = EndX - StartX;
 						float MoveDifY = EndY - StartY;
@@ -285,8 +276,47 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_r
 
 						if (s >= 0 && s <= c && t >= 0 && t <= c)
 						{
-							move_vector._1 = right - StartX;
-							return 0;
+							move_vector._1 = 0.0f;
+							return 3;
+						}
+						else
+						{
+							float TopDirX = right - left;
+							float TopDirY = top - top;
+
+							s = (-MoveDifY * (StartX - left) + MoveDifX * (StartY - top));
+							t = (TopDirX * (StartY - top) - TopDirY * (StartX - left));
+							c = (-TopDirX * MoveDifY + MoveDifX * TopDirY);
+
+							if (s >= 0 && s <= c && t >= 0 && t <= c)
+							{
+								move_vector._2 = 0.0f;
+								return 4;
+							}
+						}
+						//180-269 Degrees.
+						//Right,Top
+					}
+					else
+					{
+
+						//if (!((StartX >= right && StartY >= bottom) || (StartY <= bottom && StartX >= left)))
+						//	continue;
+
+						float MoveDifX = EndX - StartX;
+						float MoveDifY = EndY - StartY;
+
+						float RightDifX = right - right;
+						float RightDifY = bottom - top;
+
+						float s = (-MoveDifY * (StartX - right) + MoveDifX * (StartY - top));
+						float t = (RightDifX * (StartY - top) - RightDifY * (StartX - right));
+						float c = (-RightDifX * MoveDifY + MoveDifX * RightDifY);
+
+						if (s >= 0 && s <= c && t >= 0 && t <= c)
+						{
+							move_vector._1 = 0.0f;
+							return 3;
 						}
 						else {
 							float BottomDirX = left - right;
@@ -296,23 +326,19 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_r
 							t = (BottomDirX * (StartY - bottom) - BottomDirY * (StartX - right));
 							c = (-BottomDirX * MoveDifY + MoveDifX * BottomDirY);
 
+							char buffer[12];
+
 							if (s >= 0 && s <= c && t >= 0 && t <= c)
 							{
-								move_vector._2 = bottom - StartY;
-								return 0;
+								move_vector._2 = 0.0f;
+								return 2;
 							}
 						}
 						//270-359 Degrees.
 						//Right, Bottom.
 					}
 				}
-					/*
-				if (check_collison)
-				{
 
-				}
-
-				//Action Prompt Checks.
 				if (viewport._1 == -1)
 				{
 					int radial_width = (obj.width + PROMPT_PADDING) * (obj.width + PROMPT_PADDING);
@@ -364,7 +390,6 @@ int XModelMesh::CheckBasicCollision(Float3 &ref, Float2 &move_vector, int view_r
 						}
 					}
 				}
-			*/
 			}
 		}
 	}

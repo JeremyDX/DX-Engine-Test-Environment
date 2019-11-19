@@ -6,6 +6,7 @@ class XModelMesh
 {
 	public:
 		static     void LoadCollisionData();
+		static     void CheckResolutionCollision(Float3 & ref, Float2 & move_vector, int result);
 		static     int CheckBasicCollision(Float3 & ref, Float2 & move_vector, int view_rotation, Int3 & viewport);
 		static     void TestValues();
 		static     void LoadObjectDefintions();

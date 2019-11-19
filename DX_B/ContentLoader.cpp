@@ -2,6 +2,7 @@
 #include "ContentLoader.h"
 #include "ScreenManager.h"
 
+#include "Animation.h"
 #include "Engine.h"
 #include "GameTime.h"
 #include "XModelMesh.h"
@@ -160,6 +161,8 @@ void RestartHeaderSize(int total_interfaces, int total_overlays, int total_fonts
 
 	overlays = new ContentOverlay[total_overlays];
 	max_overlays = total_overlays;
+
+	Animation::Destruct();
 }
 
 void ContentLoader::AllocateVertexBuffers()
@@ -248,12 +251,13 @@ void ContentLoader::LoadSimple2DWorld()
 
 void ContentLoader::LoadWorldStage()
 {
-	RestartHeaderSize(0, 1, 1, 4);
+	RestartHeaderSize(0, 1, 1, 5);
 
 	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/SMILEY512.png", nullptr, &texture_resources[0], 0);
 	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/RGB_TransparencyMap.png", nullptr, &texture_resources[1], 0);
 	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/3_FONT.png", nullptr, &texture_resources[2], 0);
-	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/FloorTiles.PNG", nullptr, &texture_resources[3], 0);
+	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/FloorTiles.PNG", nullptr, &texture_resources[4], 0);
+	CreateWICTextureFromFile(Engine::device.Get(), Engine::context.Get(), L"Assets/HM256.PNG", nullptr, &texture_resources[3], 0);
 	
 	Engine::context->GenerateMips(texture_resources[0]);
 	Engine::context->GenerateMips(texture_resources[1]);
@@ -287,16 +291,19 @@ void ContentLoader::LoadWorldStage()
 
 	 MeshVerts[6] = { xPos			, yPos , zPos			, Color._1, Color._2, Color._3,	  0.0f,   0.0f };
 	 MeshVerts[7] = { xPos			, yPos , zPos + SIZE	, Color._1, Color._2, Color._3,   0.0f,   SIZE_2 };
-	 MeshVerts[8] = { xPos + SIZE		, yPos , zPos			, Color._1, Color._2, Color._3,   SIZE_2, 0.0f };
+	 MeshVerts[8] = { xPos + SIZE	, yPos , zPos			, Color._1, Color._2, Color._3,   SIZE_2, 0.0f };
 
-	 MeshVerts[9] = { xPos + SIZE		, yPos , zPos			, Color._1, Color._2, Color._3,   SIZE_2, 0.0f };
+	 MeshVerts[9] = { xPos + SIZE	, yPos , zPos			, Color._1, Color._2, Color._3,   SIZE_2, 0.0f };
 	MeshVerts[10] = { xPos			, yPos , zPos + SIZE	, Color._1, Color._2, Color._3,   0.0f,   SIZE_2 };
-	MeshVerts[11] = { xPos + SIZE		, yPos , zPos + SIZE	, Color._1, Color._2, Color._3,	  SIZE_2, SIZE_2 };
+	MeshVerts[11] = { xPos + SIZE	, yPos , zPos + SIZE	, Color._1, Color._2, Color._3,	  SIZE_2, SIZE_2 };
 
 	static_mesh_buffer_size = 11;
 
 	XModelMesh::LoadCollisionData();
 	XModelMesh::LoadObjectDefintions();
+
+	XModelMesh::InsertObjectToMap(MeshVerts, static_mesh_buffer_size,
+		0, 100 + (1 * 200) + 80, 100, 100 + (1 * 300) + 80);
 
 	for (int x = 1; x < 48; ++x)
 	{
@@ -359,6 +366,8 @@ void ContentLoader::LoadWorldStage()
 	Engine::context->Map(static_overlay_buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &resource);
 	memcpy(resource.pData, &OverlayVerts, sizeof(Vertex32Byte) * static_overlay_buffer_size);
 	Engine::context->Unmap(static_overlay_buffer.Get(), 0);
+
+	Animation::CreateJumpAnimation();
 
 	PresentOverlay(0);
 	ALLOW_3D_PROCESSING = true;

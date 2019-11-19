@@ -24,7 +24,7 @@ Byte2 quadrants;
 
 //Player Position In World Space.
 Float3 player_position;
-//Float3 camera_position;
+Float3 camera_position;
 
 //The Look Left/Right Rotation and Look Up/Down Rotation
 Int4 rotation_data;
@@ -35,9 +35,12 @@ Float2 blocking_value[4];
 int64_t forced_animation_index = 0;
 Float4 anim_move_vectors = { 0.0f, 0.0f, 0.0f, 0.0f };
 Float3 base_animation_position = { 0.0f, 0.0f, 0.0f };
+Float3 teleport_position = { 0.0f, 0.0f, 0.0f };
+
 Int2 animation_move_strength = { 0, 0 };
 bool throttled_jump = false;
 bool sprinting = false;
+bool crouched = false;
 
 bool send_camera_as_player = true;
 
@@ -122,7 +125,13 @@ void CameraEngine::BuildPrimaryCameraMatrix()
 
 	float xoffset = (player_position._1);
 	float zoffset = (player_position._3);
-	float height =  (player_position._2 + 1.8f);
+	float height = (player_position._2 + 1.0f);
+
+	if (crouched & 0x1)
+		height /= 2;
+
+	if (crouched & 0x2)
+		height /= 4;
 
 	//Dot Product (Position, Right Vector).
 	camera_matrix._41 = -(xoffset * camera_matrix._11 + height * camera_matrix._21 + zoffset * camera_matrix._31);
@@ -158,6 +167,8 @@ void CameraEngine::UpdatePromptView()
 
 bool teleport_animation_collided = false;
 
+static int TEST_JUMP_FRAMES = 0;
+
 bool CameraEngine::PrimaryCameraUpdatedLookAt()
 {
 	//This is to ensure we only perform 1 frame of data, in event we are running too quick it won't do anything.
@@ -183,6 +194,11 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 	unsigned int abs_forward = forward_strength * forward_strength;
 	unsigned int abs_right = right_strength * right_strength;
 
+	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::LEFT_BUMPER))
+	{
+		TEST_JUMP_FRAMES += 1;
+	}
+
 	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::LEFT_STICK_CLICK))
 	{
 		sprinting = !sprinting; //Reverse Sprint State.
@@ -194,6 +210,26 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		if (sprinting)
 		{
 			forward_strength *= 2;
+		}
+	}
+
+	if (XGameInput::AnyOfTheseButtonsArePressed(XBOX_CONTROLLER::B_BUTTON))
+	{
+		updated = true;
+		if (crouched >= 0)
+		{
+			if (crouched == 2)
+			{
+				crouched = 0;
+			}
+			else
+			{
+				crouched = 2;
+			}
+		}
+		else
+		{
+			crouched = 1;
 		}
 	}
 
@@ -220,11 +256,13 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 			anim_move_vectors._3 = forward._1;
 			anim_move_vectors._4 = forward._2;
 			sprinting = false;
+			teleport_animation_collided = false;
 		}
 	}
 
 	int64_t jump_frame = current_frame - forced_animation_index;
-	bool isJumping = jump_frame < ref.Length;
+
+	bool isJumping = jump_frame < 40;
 	bool isBlocking = jump_frame < 30;
 
 	if (isJumping)
@@ -232,16 +270,9 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		updated = true;
 
 		Float2 verify = { 0.0f, 0.0f };
-		 
+
 		if (jump_frame <= 29)
 		{
-			test._1 = test._2 = 0.0f;
-
-			//Frames 0 - 28.
-			int value = (int)(196 - ((jump_frame - 14) * (jump_frame - 14))) >> 1;
-
-			player_position._2 = base_animation_position._2 + ((float)value / 196);
-
 			float r_strength = (float)(animation_move_strength._1 * (jump_frame + 1)) / 600000L;
 			float f_strength = (float)(animation_move_strength._2 * (jump_frame + 1)) / 600000L;
 
@@ -253,16 +284,19 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 
 			int result = XModelMesh::CheckBasicCollision(base_animation_position, verify, rotation_data._2, prompt_viewport);
 
-			player_position._1 = base_animation_position._1 + verify._1;
-			player_position._3 = base_animation_position._3 + verify._2;
+			if (result > 0)
+			{
+				XModelMesh::CheckBasicCollision(base_animation_position, verify, rotation_data._2, prompt_viewport);
+			}
 
-		} 
-		else if (jump_frame <= 39)
-		{
-			//10 Frames.
-			int value = 10 - (int)(jump_frame - 29); 
-			player_position._2 = base_animation_position._2 - (float)(0.0160 * value);
+			if (result == 0)
+			{
+				player_position._1 = base_animation_position._1 + verify._1;
+				player_position._3 = base_animation_position._3 + verify._2;
+			}
 		}
+
+		player_position._2 = 0.0F + Animation::GetTranslation(0, jump_frame) * 0.00125;
 
 		UpdatePromptView();
 	}
@@ -377,13 +411,21 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 		if (moved)
 		{
 			int64_t t1 = GameTime::CurrentTimeNanos();
-			XModelMesh::CheckBasicCollision(player_position, verify, rotation_data._2, prompt_viewport);
+			int result = XModelMesh::CheckBasicCollision(player_position, verify, rotation_data._2, prompt_viewport);
+
+			if (result > 0)
+			{
+				XModelMesh::CheckBasicCollision(player_position, verify, rotation_data._2, prompt_viewport);
+			}
 			player_position._1 += verify._1;
 			player_position._3 += verify._2;
+
+
 			int64_t t2 = GameTime::CurrentTimeNanos();
 
 			ContentLoader::UpdateOverlayString(2, "Max Time: ");
 			ContentLoader::UpdateOverlayString(4, "Cur Time: ");
+
 			test._2 = t2 - t1;
 			if (test._1 < test._2)
 				test._1 = test._2;
