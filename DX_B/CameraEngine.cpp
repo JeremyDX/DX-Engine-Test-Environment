@@ -1,10 +1,11 @@
 #include "pch.h"
 #include "CameraEngine.h"
-#include "XGameInput.h"
-#include "GameTime.h"
+
 #include "Animation.h"
-#include "ScreenManager.h"
 #include "ContentLoader.h"
+#include "Engine.h"
+#include "GameTime.h"
+#include "XGameInput.h"
 #include "XModelMesh.h"
 
 const static uint32_t DEAD_ZONE = 4800 * 4800;
@@ -49,7 +50,7 @@ int VERTICAL_SPEED = 2;
 
 void CreateFinalMatrixResult()
 {
-	static const DirectX::XMMATRIX PROJECTION_MATRIX = DirectX::XMMatrixPerspectiveFovLH((float)(45 * ONE_DEGREE_AS_RADIANS), ScreenManager::ASPECT_RATIO, 0.1F, 300.0F);
+	static const DirectX::XMMATRIX PROJECTION_MATRIX = DirectX::XMMatrixPerspectiveFovLH((float)(45 * ONE_DEGREE_AS_RADIANS), (float)Engine::PREFERRED_CANVAS_WIDTH / (float)Engine::PREFERRED_CANVAS_HEIGHT, 0.1F, 300.0F);
 	DirectX::XMStoreFloat4x4(&CameraEngine::final_result, DirectX::XMLoadFloat4x4(&camera_matrix) * PROJECTION_MATRIX);
 }
 
@@ -420,22 +421,6 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 			player_position._1 += verify._1;
 			player_position._3 += verify._2;
 
-
-			int64_t t2 = GameTime::CurrentTimeNanos();
-
-			ContentLoader::UpdateOverlayString(2, "Max Time: ");
-			ContentLoader::UpdateOverlayString(4, "Cur Time: ");
-
-			test._2 = t2 - t1;
-			if (test._1 < test._2)
-				test._1 = test._2;
-			char buffer[12];
-			snprintf(buffer, 7, "%f", test._1);
-			ContentLoader::UpdateOverlayString(3, buffer);
-
-			snprintf(buffer, 7, "%f", test._2);
-			ContentLoader::UpdateOverlayString(5, buffer);
-
 			UpdatePromptView();
 
 			int angle = rotation_data._2 - rotation_data._3 - rotation_data._4;
@@ -476,44 +461,4 @@ bool CameraEngine::PrimaryCameraUpdatedLookAt()
 	}
 
 	return updated;
-}
-
-void CameraEngine::CreateDebugOverlay()
-{
-	/*
-	char buffer[12];
-
-	snprintf(buffer, 12, "%f", player_position._1);
-	ContentLoader::UpdateOverlayString(1, buffer);
-
-	snprintf(buffer, 12, "%f", player_position._2);
-	ContentLoader::UpdateOverlayString(3, buffer);
-
-	snprintf(buffer, 12, "%f", player_position._3);
-	ContentLoader::UpdateOverlayString(5, buffer);
-
-	if (test._1 >= -1.0f)
-	{
-
-		snprintf(buffer, 12, "%d", prompt_viewport._1);
-		ContentLoader::UpdateOverlayString(7, buffer);
-
-		snprintf(buffer, 12, "%d", prompt_viewport._2);
-		ContentLoader::UpdateOverlayString(9, buffer);
-
-		snprintf(buffer, 12, "%d", prompt_viewport._3);
-		ContentLoader::UpdateOverlayString(11, buffer);
-
-	}
-	else {
-		snprintf(buffer, 12, "%f", test._1);
-		ContentLoader::UpdateOverlayString(7, buffer);
-
-		snprintf(buffer, 12, "%d", 0);
-		ContentLoader::UpdateOverlayString(9, buffer);
-
-		snprintf(buffer, 12, "%d", 0);
-		ContentLoader::UpdateOverlayString(11, buffer);
-	}
-	*/
 }

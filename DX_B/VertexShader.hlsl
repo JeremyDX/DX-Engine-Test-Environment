@@ -1,3 +1,4 @@
+/*START VERTEX_SHADER*/
 cbuffer HLSLBuffer
 {
 	float4x4 view_matrix;
@@ -7,10 +8,8 @@ struct VOut
 {
     float4 position : SV_POSITION;
     float4 color : COLOR;
-	float2 texcoord: TEXCOORD;        // texture coordinates
+	float2 texcoord: TEXCOORD;
 };
-
-//target vs_4_0_level_9_3
 
 VOut main(float4 position : POSITION, float4 color : COLOR, float2 texcoord : TEXCOORD)
 {
@@ -27,3 +26,4 @@ VOut main(float4 position : POSITION, float4 color : COLOR, float2 texcoord : TE
 	output.texcoord = texcoord;    // set the texture coordinates, unmodified
 	return output;
 }
+/*END VERTEX_SHADER*/

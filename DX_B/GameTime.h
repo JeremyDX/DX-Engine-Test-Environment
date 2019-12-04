@@ -4,8 +4,8 @@ class GameTime
 {
 public:
 
-	static void Begin();
-	static void Tick();
+	static    void Begin();
+	static	  void Tick();
 
 	static int64_t CurrentTimeCPUCycles();
 	static  double CurrentTimeNanos();
@@ -34,12 +34,12 @@ public:
 	static int64_t AbsoluteFrameTicks();
 	static int64_t TotalGameLoops();
 
-	static void ResetWindowTimeStamp();
+	static    void ResetWindowTimeStamp();
 	static int64_t ElapsedWindowFrameTicks();
 
-	static bool Sleep();
+	static    bool Sleep();
 	static int64_t Sleep(int pause, int checksum);
 
-	static void DisplayOutputMilliseconds(int64_t timespan, unsigned loops);
-	static void DisplayOutputCPUCycles(int64_t timespan, unsigned loops);
+	static    void DisplayOutputMilliseconds(int64_t timespan, unsigned loops);
+	static    void DisplayOutputCPUCycles(int64_t timespan, unsigned loops);
 };

@@ -1,0 +1,176 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Assets">
+      <UniqueIdentifier>f9d80b08-b5b3-440e-add1-1e448fe65186</UniqueIdentifier>
+      <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{cb84a10f-f134-4839-a456-8dded1c88bd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{ef210b5b-e523-431d-be8a-8a5af4bd4b91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="#Project Dependencies">
+      <UniqueIdentifier>{eb31d19c-2c79-42e5-a27e-1aec57c41fee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{e60a57d2-edba-4856-9016-fdefcd16e581}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>#Project Dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="XWicLoader.cpp">
+      <Filter>#Project Dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="XModelMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="XGameInput.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GameTime.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FontResource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ContentLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Constants.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BinaryReaderWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Animation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ContentWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Constants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BinaryReaderWriter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FontResource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="XGameInput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="XModelMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>#Project Dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>#Project Dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="XWicLoader.h">
+      <Filter>#Project Dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="GameTime.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ContentLoader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\0_FONT.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\1.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\1_FONT.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\2.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\2_FONT.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\3_FONT.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Image_0.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Image_1.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Image_2.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\RGB_TransparencyMap.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Wood.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SMILEY512.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\FloorTiles.PNG">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\HM256.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <Filter>#Project Dependencies</Filter>
+    </None>
+    <None Include="DirectX 11 - Test Engine_TemporaryKey.pfx">
+      <Filter>#Project Dependencies</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="VertexShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="TexturePosition.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest">
+      <Filter>#Project Dependencies</Filter>
+    </AppxManifest>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="DirectX 11 - Test Engine.rc">
+      <Filter>#Project Dependencies</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

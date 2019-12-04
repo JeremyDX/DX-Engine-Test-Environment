@@ -1,9 +1,8 @@
 #include "pch.h"
-
 #include "XModelMesh.h"
-#include "Landscape.h"
-#include "ScreenManager.h"
+
 #include "ContentLoader.h"
+#include "Engine.h"
 
 const static double ONE_DEGREE_AS_RADIANS = 0.01745329251;
 const static double RADIANS_TO_BIG_DEGREE = 558.50536032;
@@ -471,11 +470,11 @@ void XModelMesh::LoadObjectDefintions()
 */
 __int32 XModelMesh::CreateTexturedSquare(Vertex32Byte *verts, int offset, Float3 Col, int texture_width, int texture_height, int drawX, int drawY)
 {
-	float offsetX = (2 * drawX) / (float)ScreenManager::PREFERRED_CANVAS_WIDTH;
-	float offsetY = (2 * drawY) / (float)ScreenManager::PREFERRED_CANVAS_HEIGHT;
+	float offsetX = (2 * drawX) / (float)Engine::PREFERRED_CANVAS_WIDTH;
+	float offsetY = (2 * drawY) / (float)Engine::PREFERRED_CANVAS_HEIGHT;
 
-	float width = (2 * texture_width) / (float)ScreenManager::PREFERRED_CANVAS_WIDTH;
-	float height = (2 * texture_height) / (float)ScreenManager::PREFERRED_CANVAS_HEIGHT;
+	float width = (2 * texture_width) / (float)Engine::PREFERRED_CANVAS_WIDTH;
+	float height = (2 * texture_height) / (float)Engine::PREFERRED_CANVAS_HEIGHT;
 
 	float top = 1.0F - offsetY;
 	float bottom = 1.0f - height - offsetY;
@@ -494,12 +493,19 @@ __int32 XModelMesh::CreateTexturedSquare(Vertex32Byte *verts, int offset, Float3
 	return offset;
 }
 
+const float CreateShaderColor(const float brightness, const float alpha)
+{
+	const int a = (int)(brightness * 255);
+	const int b = (int)(alpha * 255);
+	return (float)((a << 8) | b);
+}
+
 __int32 XModelMesh::InsertObjectToMap(Vertex32Byte * verts, int & offset, int id, int xunits, int yunits, int zunits)
 {
 	float x = xunits / 80.0f;
 	float y = yunits / 80.0f;
 	float z = zunits / 80.0f;
-	Float3 c = { ContentLoader::CreateShaderColor(0.5f, 1.0f), 0.5f, 0.5f };
+	const Float3 c = { CreateShaderColor(0.5f, 1.0f), 0.5f, 0.5f };
 	ObjectDefinition &obj = definitions[id];
 	for (int i = obj.buffer_begin; i <= obj.buffer_end; ++i)
 	{

@@ -1,30 +1,14 @@
 #pragma once
 
-class ContentWindow
+#include <cstdint>
+
+//80 Bytes Per Window / Overlay Componenet Per Content Package.
+struct ContentWindow
 {
-	public:
-		ContentWindow();
-		~ContentWindow();
+	uint8_t texture_count;
 
-	public:	
-		unsigned __int32 background_color;	
-		  signed __int16 background_shader_id = -1; 
-	
-	public:
-		signed __int32 state_change_alias[4];
-		signed __int16 state_vertex_offsets[4];
-		signed __int16 state_vertex_sizes[4];
-		signed  __int8 state_changes;
+	uint16_t vertex_offsets[4];
+	uint8_t texture_ids[4];
 
-	public:
-		void (*update)();
-		void (*children)();
-		void UpdateLeftRight();
-		void SetUpdateProc(int index);
-		void SetChildUpdateProc(int index, int size, int disabled_bits);
-
-	public:
-		int menu_index;
-		int menu_size;
-		int disabled_menu_bits;
+	void(*update)();
 };
